@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Studio — Kankana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#26080e;
+    --cream:#f6ecd8;
+    --sand:#c9a35c;
+    --gold:#b8894a;
+    --gold-light:#e9c98f;
+    --line:rgba(38,8,14,0.16);
+    --line-light:rgba(246,236,216,0.28);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--cream);color:var(--ink);font-family:'Jost', sans-serif;font-weight:300;overflow-x:hidden;}
+  h1,h2,h3,.serif{font-family:'Cormorant Garamond', serif;font-weight:400;letter-spacing:0.01em;}
+  .eyebrow{font-family:'Cinzel', serif;font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:var(--gold);opacity:0.9;}
+  a{color:inherit;text-decoration:none;}
+  img{display:block;width:100%;height:100%;object-fit:cover;}
+
+  nav{
+    position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;
+    padding:32px 56px;z-index:100;background:rgba(247,244,238,0.92);backdrop-filter:blur(10px);
+    box-shadow:0 1px 0 var(--line);color:var(--ink);transition:padding 0.4s ease;
+  }
+  nav.scrolled{padding:18px 56px;}
+  .logo{font-family:'Cormorant Garamond', serif;font-size:22px;letter-spacing:0.42em;text-transform:uppercase;}
+  .nav-links{display:flex;gap:44px;}
+  .nav-links a{font-size:12px;letter-spacing:0.14em;text-transform:uppercase;position:relative;padding-bottom:4px;}
+  .nav-links a::after{content:'';position:absolute;left:0;bottom:0;width:0;height:1px;background:currentColor;transition:width 0.35s ease;}
+  .nav-links a:hover::after{width:100%;}
+  .nav-links a.current{opacity:0.4;}
+
+  .hero{
+    position:relative;height:70vh;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;overflow:hidden;
+  }
+  .hero img{position:absolute;inset:0;filter:brightness(0.55);}
+  .hero-content{position:relative;z-index:2;color:#fff;}
+  .hero-content .eyebrow{color:var(--gold-light);opacity:0.95;margin-bottom:22px;}
+  .hero-content h1{font-size:clamp(44px,7vw,84px);letter-spacing:0.03em;line-height:1.05;}
+  .hero-content p{margin-top:20px;font-size:15px;letter-spacing:0.03em;opacity:0.9;max-width:560px;margin-left:auto;margin-right:auto;}
+
+  section{padding:140px 56px;}
+  .reveal{opacity:0;transform:translateY(36px);transition:opacity 1s ease, transform 1s ease;}
+  .reveal.in{opacity:1;transform:translateY(0);}
+
+  .intro{max-width:760px;margin:0 auto;text-align:center;}
+  .intro .eyebrow{margin-bottom:26px;}
+  .intro h2{font-size:clamp(26px,3.6vw,38px);line-height:1.5;font-weight:300;}
+  .intro p{margin-top:28px;font-size:15px;line-height:1.9;opacity:0.7;}
+
+  .founder-strip{
+    display:grid;grid-template-columns:0.9fr 1.1fr;gap:80px;align-items:center;
+  }
+  .founder-strip .img-wrap{height:64vh;overflow:hidden;}
+  .founder-strip .eyebrow{margin-bottom:22px;}
+  .founder-strip h2{font-size:clamp(28px,4vw,44px);margin-bottom:24px;}
+  .founder-strip p{font-size:15px;line-height:1.9;opacity:0.75;max-width:440px;}
+  .founder-strip .sig{margin-top:32px;font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;opacity:0.8;}
+
+  .collective-head{text-align:center;margin-bottom:80px;}
+  .collective-head .eyebrow{margin-bottom:20px;}
+  .collective-head h2{font-size:clamp(28px,4vw,42px);}
+  .collective-head p{margin-top:20px;font-size:14px;opacity:0.6;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.8;}
+
+  .team-grid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--line);
+  }
+  .team-card{background:var(--cream);padding-bottom:32px;}
+  .team-card .photo{height:380px;overflow:hidden;position:relative;}
+  .team-card .photo img{filter:grayscale(15%);transition:transform 1s ease, filter 0.6s ease;}
+  .team-card:hover .photo img{transform:scale(1.05);filter:grayscale(0%);}
+  .team-card .info{padding:26px 28px 0;}
+  .team-card .role{font-size:10px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.5;margin-bottom:8px;}
+  .team-card h3{font-size:24px;margin-bottom:14px;}
+  .team-card .quote{font-size:13.5px;line-height:1.75;opacity:0.7;font-style:italic;}
+
+  .credit-example{
+    background:linear-gradient(rgba(38,8,14,0.93),rgba(38,8,14,0.93)), url('assets/intro-bg.png');
+    background-size:cover;background-position:center;
+    color:var(--cream);padding:120px 56px;
+  }
+  .credit-example .inner{max-width:820px;margin:0 auto;text-align:center;}
+  .credit-example .eyebrow{color:var(--sand);margin-bottom:24px;}
+  .credit-example h2{font-size:clamp(26px,3.6vw,38px);line-height:1.5;font-weight:300;margin-bottom:56px;}
+  .credit-card{
+    text-align:left;border:1px solid var(--line-light);padding:32px;display:flex;justify-content:space-between;align-items:center;gap:24px;
+  }
+  .credit-card .proj{font-family:'Cormorant Garamond',serif;font-size:26px;}
+  .credit-card .proj-type{font-size:11px;letter-spacing:0.16em;text-transform:uppercase;opacity:0.5;margin-top:6px;}
+  .credit-card .credited{font-size:13px;text-align:right;opacity:0.8;line-height:1.7;}
+  .credit-card .credited b{font-weight:400;font-family:'Cormorant Garamond',serif;font-size:17px;}
+
+  .cta{background:var(--cream);text-align:center;}
+  .cta .eyebrow{margin-bottom:26px;}
+  .cta h2{font-size:clamp(28px,4vw,44px);line-height:1.3;max-width:640px;margin:0 auto 40px;}
+  .btn{
+    display:inline-flex;align-items:center;gap:14px;font-size:11px;letter-spacing:0.24em;text-transform:uppercase;
+    padding-bottom:8px;border-bottom:1px solid var(--ink);
+  }
+  .btn::after{content:'\2192';transition:transform 0.3s ease;}
+  .btn:hover::after{transform:translateX(6px);}
+
+  footer{
+    background:linear-gradient(rgba(38,8,14,0.96),rgba(38,8,14,0.96)), url('assets/intro-bg.png');
+    background-size:cover;background-position:center;
+    color:var(--cream);padding:60px 56px 40px;
+    display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--line-gold, rgba(184,137,74,0.4));
+  }
+  .footer-col h4{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;opacity:0.5;margin-bottom:16px;}
+  .footer-col a{display:block;font-size:13px;opacity:0.85;margin-bottom:10px;}
+  .footer-logo{font-family:'Cormorant Garamond',serif;font-size:20px;letter-spacing:0.3em;}
+  .footer-bottom{font-size:11px;opacity:0.45;letter-spacing:0.04em;}
+
+  @media(max-width:960px){
+    .team-grid{grid-template-columns:repeat(2,1fr);}
+    .founder-strip{grid-template-columns:1fr;gap:40px;}
+    .founder-strip .img-wrap{height:50vh;}
+  }
+  @media(max-width:640px){
+    nav{padding:22px 24px;}
+    .nav-links{display:none;}
+    section{padding:90px 24px;}
+    .team-grid{grid-template-columns:1fr;}
+    .credit-card{flex-direction:column;align-items:flex-start;text-align:left;}
+    .credit-card .credited{text-align:left;}
+    footer{flex-direction:column;align-items:flex-start;gap:32px;}
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo">Kankana</div>
+  <div class="nav-links">
+    <a href="index.html#venues">Venues</a>
+    <a href="index.html#featured">Stays</a>
+    <a href="index.html#experiences">Events</a>
+    <a href="index.html#journal">Journal</a>
+    <a href="studio.html" class="current">Studio</a>
+    <a href="index.html#enquire">Enquire</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <img src="https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?w=1800&h=1100&fit=crop&crop=entropy&auto=format&q=80" alt="Gold and floral wedding mandap decoration">
+  <div class="hero-content">
+    <div class="eyebrow">The Studio</div>
+    <h1>The people behind Kankana</h1>
+    <p>Every venue, stay, and celebration carries a name. Here are some of the people who shape them.</p>
+  </div>
+</header>
+
+<section class="intro reveal">
+  <div class="eyebrow">How We Think About This</div>
+  <h2>We didn't want a page of headshots and job titles. What Kankana makes — a venue, a stay, a wedding — already says more about the people behind it than a bio ever could. So instead, we introduce them through their craft.</h2>
+</section>
+
+<section class="founder-strip reveal">
+  <div class="img-wrap">
+    <img src="https://images.unsplash.com/photo-1743664831600-d494f1962404?w=900&h=1100&fit=crop&crop=entropy&auto=format&q=80" alt="Founder portrait">
+  </div>
+  <div>
+    <div class="eyebrow">Founder</div>
+    <h2>Started with one wedding, and a refusal to compromise</h2>
+    <p>Kankana began with a single wedding in Ubud. What's grown around it since — themed venues, curated stays, and full-scale celebrations across Bali and Myanmar — still runs on the same instinct: build slowly, source locally, and never let scale dull the detail.</p>
+    <div class="sig">— Founder & Creative Director</div>
+  </div>
+</section>
+
+<section class="reveal">
+  <div class="collective-head">
+    <div class="eyebrow">The Collective</div>
+    <h2>A few of the people you'll meet</h2>
+    <p>Not an org chart — a working introduction. Each of them leads work you can see elsewhere on this site, credited by name.</p>
+  </div>
+  <div class="team-grid">
+    <div class="team-card">
+      <div class="photo">
+        <img src="https://images.unsplash.com/photo-1743664831600-d494f1962404?w=500&h=650&fit=crop&crop=entropy&auto=format&q=80" alt="Team member portrait">
+      </div>
+      <div class="info">
+        <div class="role">Founder & Creative Director</div>
+        <h3>[ Name ]</h3>
+        <p class="quote">"On building with the land, not against it — every site tells you what it wants to be, if you wait long enough to listen."</p>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="photo">
+        <img src="https://images.unsplash.com/photo-1542719018-ee28cbdc71ee?w=500&h=650&fit=crop&crop=entropy&auto=format&q=80" alt="Team member portrait">
+      </div>
+      <div class="info">
+        <div class="role">Lead Wedding Planner & Head of Venues</div>
+        <h3>[ Name ]</h3>
+        <p class="quote">"A venue should feel inevitable — like the wedding was always meant to happen exactly there."</p>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="photo">
+        <img src="https://images.unsplash.com/photo-1552334949-51934e5f2d38?w=500&h=650&fit=crop&crop=entropy&auto=format&q=80" alt="Team member portrait">
+      </div>
+      <div class="info">
+        <div class="role">Director of Events & Head of Décor</div>
+        <h3>[ Name ]</h3>
+        <p class="quote">"The best celebrations are the ones where you can't see the seams — just flowers, light, and people fully present."</p>
+      </div>
+    </div>
+    <div class="team-card">
+      <div class="photo">
+        <img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500&h=650&fit=crop&crop=entropy&auto=format&q=80" alt="Team member portrait">
+      </div>
+      <div class="info">
+        <div class="role">Guest Experience Lead</div>
+        <h3>[ Name ]</h3>
+        <p class="quote">"Hospitality is mostly noticing — what wasn't asked for, but was needed."</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="credit-example reveal">
+  <div class="inner">
+    <div class="eyebrow">Credited, Not Listed</div>
+    <h2>Rather than a directory, the team shows up where the work does — on every venue, stay, and event page.</h2>
+    <div class="credit-card">
+      <div>
+        <div class="proj">Villa Kancana, Ubud</div>
+        <div class="proj-type">Stay — Bali Collection</div>
+      </div>
+      <div class="credited">
+        Designed by <b>[ Name ]</b><br>
+        Hosted by <b>[ Name ]</b>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta reveal">
+  <div class="eyebrow">Work With Us</div>
+  <h2>Interested in joining the collective, or commissioning the team directly?</h2>
+  <a class="btn" href="index.html#enquire">Get in Touch</a>
+</section>
+
+<footer>
+  <div class="footer-col">
+    <div class="footer-logo">Kankana</div>
+  </div>
+  <div class="footer-col">
+    <h4>Explore</h4>
+    <a href="index.html#venues">Venues</a>
+    <a href="index.html#featured">Stays</a>
+    <a href="index.html#experiences">Events</a>
+  </div>
+  <div class="footer-col">
+    <h4>Studio</h4>
+    <a href="studio.html">The Collective</a>
+    <a href="index.html#journal">Journal</a>
+    <a href="index.html#enquire">Contact</a>
+  </div>
+  <div class="footer-col">
+    <h4>Follow</h4>
+    <a href="#">Instagram</a>
+    <a href="#">Pinterest</a>
+  </div>
+</footer>
+<div style="background:var(--ink);text-align:center;padding-bottom:24px;">
+  <span class="footer-bottom" style="color:var(--cream);">© 2026 Kankana. All rights reserved.</span>
+</div>
+
+<script>
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 40) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  });
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>

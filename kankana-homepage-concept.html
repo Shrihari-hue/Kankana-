@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kankana — Luxury Villas & Curated Stays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1b1a17;
+    --cream:#f7f4ee;
+    --sand:#cfc3ad;
+    --line:rgba(27,26,23,0.14);
+    --line-light:rgba(247,244,238,0.28);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Jost', sans-serif;
+    font-weight:300;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.serif{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:400;
+    letter-spacing:0.01em;
+  }
+  .eyebrow{
+    font-family:'Jost', sans-serif;
+    font-size:11px;
+    letter-spacing:0.32em;
+    text-transform:uppercase;
+    opacity:0.65;
+  }
+  a{color:inherit;text-decoration:none;}
+  img{display:block;width:100%;height:100%;object-fit:cover;}
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:fixed;top:0;left:0;right:0;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:32px 56px;
+    z-index:100;
+    mix-blend-mode:difference;
+    color:#fff;
+    background:transparent;
+    transition:padding 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
+  }
+  nav.scrolled{
+    padding:18px 56px;
+    mix-blend-mode:normal;
+    color:var(--ink);
+    background:rgba(247,244,238,0.92);
+    backdrop-filter:blur(10px);
+    box-shadow:0 1px 0 var(--line);
+  }
+  .logo{
+    font-family:'Cormorant Garamond', serif;
+    font-size:22px;
+    letter-spacing:0.42em;
+    text-transform:uppercase;
+  }
+  .nav-links{display:flex;gap:44px;}
+  .nav-links a{
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    position:relative;
+    padding-bottom:4px;
+  }
+  .nav-links a::after{
+    content:'';position:absolute;left:0;bottom:0;width:0;height:1px;
+    background:currentColor;transition:width 0.35s ease;
+  }
+  .nav-links a:hover::after{width:100%;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;height:100vh;width:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;overflow:hidden;
+  }
+  .hero img{
+    position:absolute;inset:0;
+    transform:scale(1.08);
+    filter:brightness(0.62);
+  }
+  .hero-content{position:relative;z-index:2;color:#fff;}
+  .hero-content .eyebrow{color:#f2ead9;opacity:0.85;margin-bottom:22px;}
+  .hero-content h1{
+    font-size:clamp(52px,9vw,120px);
+    letter-spacing:0.06em;
+    line-height:0.95;
+  }
+  .hero-content p{
+    margin-top:22px;
+    font-size:15px;
+    letter-spacing:0.06em;
+    font-weight:300;
+    opacity:0.9;
+  }
+  .scroll-cue{
+    position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+    z-index:2;color:#fff;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;
+    display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0.8;
+  }
+  .scroll-cue span{
+    width:1px;height:36px;background:rgba(255,255,255,0.6);
+    animation:scrollpulse 2s ease-in-out infinite;
+  }
+  @keyframes scrollpulse{
+    0%{transform:scaleY(0);transform-origin:top;}
+    50%{transform:scaleY(1);transform-origin:top;}
+    50.01%{transform-origin:bottom;}
+    100%{transform:scaleY(0);transform-origin:bottom;}
+  }
+
+  /* ---------- SECTION SHELL ---------- */
+  section{padding:160px 56px;}
+  .reveal{opacity:0;transform:translateY(36px);transition:opacity 1s ease, transform 1s ease;}
+  .reveal.in{opacity:1;transform:translateY(0);}
+
+  /* ---------- PHILOSOPHY ---------- */
+  .philosophy{
+    max-width:780px;margin:0 auto;text-align:center;padding:120px 56px;
+  }
+  .philosophy .eyebrow{margin-bottom:26px;}
+  .philosophy h2{
+    font-size:clamp(28px,4vw,42px);
+    line-height:1.4;font-weight:300;
+  }
+
+  /* ---------- DESTINATIONS ---------- */
+  .destinations{padding:0 0 0 0;}
+  .dest-grid{display:grid;grid-template-columns:1fr 1fr;}
+  .dest-panel{
+    position:relative;height:82vh;overflow:hidden;cursor:pointer;
+  }
+  .dest-panel img{transition:transform 1.4s cubic-bezier(.16,1,.3,1);}
+  .dest-panel:hover img{transform:scale(1.08);}
+  .dest-panel::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.55) 100%);
+  }
+  .dest-label{
+    position:absolute;left:40px;bottom:40px;z-index:2;color:#fff;
+  }
+  .dest-label .eyebrow{color:#f2ead9;margin-bottom:10px;}
+  .dest-label h3{font-size:clamp(34px,4vw,54px);}
+  .dest-label p{font-size:13px;margin-top:8px;opacity:0.85;letter-spacing:0.03em;}
+
+  /* ---------- FEATURED STAY ---------- */
+  .featured{
+    display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:80px;
+  }
+  .featured .img-wrap{height:70vh;overflow:hidden;}
+  .featured-text .eyebrow{margin-bottom:22px;}
+  .featured-text h2{font-size:clamp(30px,4vw,48px);line-height:1.15;margin-bottom:26px;}
+  .featured-text p{font-size:15px;line-height:1.9;opacity:0.75;max-width:420px;margin-bottom:36px;}
+  .btn{
+    display:inline-flex;align-items:center;gap:14px;
+    font-size:11px;letter-spacing:0.24em;text-transform:uppercase;
+    padding-bottom:8px;border-bottom:1px solid var(--ink);
+  }
+  .btn::after{content:'\2192';transition:transform 0.3s ease;}
+  .btn:hover::after{transform:translateX(6px);}
+
+  /* ---------- EXPERIENCES ---------- */
+  .experiences-head{text-align:center;margin-bottom:70px;}
+  .experiences-head .eyebrow{margin-bottom:20px;}
+  .experiences-head h2{font-size:clamp(28px,4vw,42px);}
+  .exp-scroll{
+    display:flex;gap:28px;overflow-x:auto;padding-bottom:20px;
+    scrollbar-width:none;
+  }
+  .exp-scroll::-webkit-scrollbar{display:none;}
+  .exp-card{
+    flex:0 0 340px;height:440px;position:relative;overflow:hidden;
+  }
+  .exp-card img{transition:transform 1s ease;}
+  .exp-card:hover img{transform:scale(1.06);}
+  .exp-card::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.6) 100%);
+  }
+  .exp-card-label{
+    position:absolute;left:24px;bottom:24px;z-index:2;color:#fff;
+  }
+  .exp-card-label .eyebrow{color:#f2ead9;margin-bottom:6px;font-size:10px;}
+  .exp-card-label h3{font-size:24px;}
+
+  /* ---------- JOURNAL ---------- */
+  .journal{background:#eee8dc;}
+  .journal-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-top:70px;
+  }
+  .journal-item .img-wrap{height:280px;overflow:hidden;margin-bottom:24px;}
+  .journal-item .img-wrap img{transition:transform 1s ease;}
+  .journal-item:hover .img-wrap img{transform:scale(1.06);}
+  .journal-item .eyebrow{margin-bottom:12px;}
+  .journal-item h3{font-size:24px;line-height:1.3;}
+
+  /* ---------- CTA ---------- */
+  .cta{
+    background:var(--ink);color:var(--cream);
+    text-align:center;padding:180px 56px;
+  }
+  .cta .eyebrow{color:var(--sand);margin-bottom:26px;}
+  .cta h2{font-size:clamp(34px,6vw,64px);line-height:1.15;max-width:720px;margin:0 auto 46px;}
+  .cta-form{
+    display:flex;justify-content:center;gap:0;max-width:440px;margin:0 auto;
+    border-bottom:1px solid var(--line-light);padding-bottom:14px;
+  }
+  .cta-form input{
+    background:transparent;border:none;outline:none;color:var(--cream);
+    font-family:'Jost',sans-serif;font-size:14px;letter-spacing:0.02em;
+    flex:1;padding:6px;
+  }
+  .cta-form input::placeholder{color:rgba(247,244,238,0.5);}
+  .cta-form button{
+    background:none;border:none;color:var(--cream);
+    font-size:11px;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    background:var(--ink);color:var(--cream);
+    padding:60px 56px 40px;
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-top:1px solid var(--line-light);
+  }
+  .footer-col h4{
+    font-size:11px;letter-spacing:0.2em;text-transform:uppercase;opacity:0.5;margin-bottom:16px;
+  }
+  .footer-col a{display:block;font-size:13px;opacity:0.85;margin-bottom:10px;}
+  .footer-logo{font-family:'Cormorant Garamond',serif;font-size:20px;letter-spacing:0.3em;}
+  .footer-bottom{font-size:11px;opacity:0.45;letter-spacing:0.04em;}
+
+  @media(max-width:860px){
+    nav{padding:22px 24px;}
+    .nav-links{display:none;}
+    section{padding:100px 24px;}
+    .dest-grid{grid-template-columns:1fr;}
+    .featured{grid-template-columns:1fr;gap:40px;}
+    .featured .img-wrap{height:50vh;}
+    .journal-grid{grid-template-columns:1fr;}
+    footer{flex-direction:column;align-items:flex-start;gap:32px;}
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo">Kankana</div>
+  <div class="nav-links">
+    <a href="#destinations">Destinations</a>
+    <a href="#featured">Stays</a>
+    <a href="#experiences">Experiences</a>
+    <a href="#journal">Journal</a>
+    <a href="#enquire">Enquire</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <img src="https://images.unsplash.com/photo-1557093793-d149a38a1be8?w=1800&h=1200&fit=crop&crop=entropy&auto=format&q=80" alt="Aerial view of Bali rice terraces">
+  <div class="hero-content">
+    <div class="eyebrow">Bali · Myanmar · Beyond</div>
+    <h1>Kankana</h1>
+    <p>Private villas and curated stays, quietly extraordinary</p>
+  </div>
+  <div class="scroll-cue"><span></span>Scroll</div>
+</header>
+
+<section class="philosophy reveal">
+  <div class="eyebrow">Our Philosophy</div>
+  <h2>Every Kankana address is built around a single idea — that true luxury is space, silence, and a sense of place. No two stays are alike; each is shaped by the land, the culture, and the craft of where it stands.</h2>
+</section>
+
+<section id="destinations" class="destinations reveal" style="padding-left:0;padding-right:0;">
+  <div class="dest-grid">
+    <a class="dest-panel" href="#">
+      <img src="https://images.unsplash.com/photo-1759372945658-1e9f56e751bd?w=1000&h=1300&fit=crop&crop=entropy&auto=format&q=80" alt="Tropical villa with pool at twilight, Bali">
+      <div class="dest-label">
+        <div class="eyebrow">Collection 01</div>
+        <h3>Bali</h3>
+        <p>Rice-terrace villas & clifftop retreats</p>
+      </div>
+    </a>
+    <a class="dest-panel" href="#">
+      <img src="https://images.unsplash.com/photo-1692975006850-904488166781?w=1000&h=1300&fit=crop&crop=entropy&auto=format&q=80" alt="Traditional stilt house on Inle Lake, Myanmar">
+      <div class="dest-label">
+        <div class="eyebrow">Collection 02</div>
+        <h3>Myanmar</h3>
+        <p>Temple-side houses & lakeside sanctuaries</p>
+      </div>
+    </a>
+  </div>
+</section>
+
+<section id="featured" class="featured reveal">
+  <div class="img-wrap">
+    <img src="https://images.unsplash.com/photo-1607250844650-eae520552a4c?w=1200&h=1500&fit=crop&crop=entropy&auto=format&q=80" alt="Villa with pool, Bali, Indonesia">
+  </div>
+  <div class="featured-text">
+    <div class="eyebrow">Featured Stay</div>
+    <h2>Villa Kancana, Ubud</h2>
+    <p>Set above a private ravine in Ubud, five pavilions open entirely to the jungle. Stone, teak, and water define every room — nothing is added that doesn't need to be there.</p>
+    <a class="btn" href="#">View Property</a>
+  </div>
+</section>
+
+<section id="experiences" class="reveal">
+  <div class="experiences-head">
+    <div class="eyebrow">Curated For You</div>
+    <h2>Experiences</h2>
+  </div>
+  <div class="exp-scroll">
+    <a class="exp-card" href="#">
+      <img src="https://images.unsplash.com/photo-1646473315764-c6cd47fe74c3?w=700&h=900&fit=crop&crop=entropy&auto=format&q=80" alt="Candlelit private dining table">
+      <div class="exp-card-label"><div class="eyebrow">Culinary</div><h3>Private Chef's Table</h3></div>
+    </a>
+    <a class="exp-card" href="#">
+      <img src="https://images.unsplash.com/photo-1557093793-d149a38a1be8?w=700&h=900&fit=crop&crop=entropy&auto=format&q=80" alt="Misty rice terraces at sunrise, Bali">
+      <div class="exp-card-label"><div class="eyebrow">Wellness</div><h3>Sunrise Ritual & Spa</h3></div>
+    </a>
+    <a class="exp-card" href="#">
+      <img src="https://images.unsplash.com/photo-1542296415-bdf12ebd2863?w=700&h=900&fit=crop&crop=entropy&auto=format&q=80" alt="Hot air balloons over Bagan temples at sunrise, Myanmar">
+      <div class="exp-card-label"><div class="eyebrow">Culture</div><h3>Temple & Village Tour</h3></div>
+    </a>
+    <a class="exp-card" href="#">
+      <img src="https://images.unsplash.com/photo-1727786043170-6ae5a530c116?w=700&h=900&fit=crop&crop=entropy&auto=format&q=80" alt="Boat traveling down a jungle river">
+      <div class="exp-card-label"><div class="eyebrow">Adventure</div><h3>River & Rainforest Trek</h3></div>
+    </a>
+  </div>
+</section>
+
+<section id="journal" class="journal reveal">
+  <div class="experiences-head" style="text-align:left;margin-bottom:0;">
+    <div class="eyebrow">From the Journal</div>
+    <h2>Notes on Slow Travel</h2>
+  </div>
+  <div class="journal-grid">
+    <a class="journal-item" href="#">
+      <div class="img-wrap"><img src="https://images.unsplash.com/photo-1759372945658-1e9f56e751bd?w=700&h=500&fit=crop&crop=entropy&auto=format&q=80" alt="Villa architecture, Ubud"></div>
+      <div class="eyebrow">Bali</div>
+      <h3>The Quiet Architecture of Ubud</h3>
+    </a>
+    <a class="journal-item" href="#">
+      <div class="img-wrap"><img src="https://images.unsplash.com/photo-1692975006850-904488166781?w=700&h=500&fit=crop&crop=entropy&auto=format&q=80" alt="Inle Lake at first light, Myanmar"></div>
+      <div class="eyebrow">Myanmar</div>
+      <h3>Inle Lake at First Light</h3>
+    </a>
+    <a class="journal-item" href="#">
+      <div class="img-wrap"><img src="https://images.unsplash.com/photo-1557093793-d149a38a1be8?w=700&h=500&fit=crop&crop=entropy&auto=format&q=80" alt="Rice terrace architecture, Bali"></div>
+      <div class="eyebrow">Design</div>
+      <h3>Building With, Not Against, the Land</h3>
+    </a>
+  </div>
+</section>
+
+<section id="enquire" class="cta reveal">
+  <div class="eyebrow">Plan Your Stay</div>
+  <h2>Let us know where you're dreaming of, and we'll take care of the rest.</h2>
+  <form class="cta-form" onsubmit="return false;">
+    <input type="email" placeholder="Your email address" />
+    <button type="submit">Enquire →</button>
+  </form>
+</section>
+
+<footer>
+  <div class="footer-col">
+    <div class="footer-logo">Kankana</div>
+  </div>
+  <div class="footer-col">
+    <h4>Explore</h4>
+    <a href="#destinations">Destinations</a>
+    <a href="#featured">Stays</a>
+    <a href="#experiences">Experiences</a>
+  </div>
+  <div class="footer-col">
+    <h4>Studio</h4>
+    <a href="#">About</a>
+    <a href="#journal">Journal</a>
+    <a href="#enquire">Contact</a>
+  </div>
+  <div class="footer-col">
+    <h4>Follow</h4>
+    <a href="#">Instagram</a>
+    <a href="#">Pinterest</a>
+  </div>
+</footer>
+<div style="background:var(--ink);text-align:center;padding-bottom:24px;">
+  <span class="footer-bottom" style="color:var(--cream);">© 2026 Kankana. All rights reserved.</span>
+</div>
+
+<script>
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 40) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  });
+
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) e.target.classList.add('in');
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>

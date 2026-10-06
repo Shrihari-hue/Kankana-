@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kankana — Weddings & Beyond</title>
+<meta name="description" content="Kankana — venues, stays and celebrations built around you. Explore the palace, step inside the celebration, and plan your wedding.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="assets/kankana-logo-intro.webp">
+<link rel="preload" as="image" href="assets/intro-bg.jpg">
+<link rel="preload" as="image" href="assets/hero-frames/f_0001.webp">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="assets/home.css">
+<style>
+  /* ---------- INTRO SEQUENCE ---------- */
+  #intro{
+    position:fixed;inset:0;z-index:9999;background:#0c0206;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  #intro .intro-bg{
+    position:absolute;inset:0;opacity:0;
+    animation:introBgIn 0.7s ease forwards;
+  }
+  #intro .intro-bg img{
+    width:100%;height:100%;object-fit:cover;filter:brightness(0.8) saturate(1.05);
+  }
+  #intro .intro-bg::after{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse at center, rgba(12,2,6,0.15) 0%, rgba(12,2,6,0.75) 100%);
+  }
+  #intro .intro-logo{
+    position:relative;z-index:2;width:min(300px, 42vw);
+    opacity:0;transform:scale(0.86) translateY(6px);
+    animation:introLogoIn 0.9s cubic-bezier(.16,1,.3,1) forwards;
+    animation-delay:0.25s;
+  }
+  #intro .intro-logo img{width:100%;display:block;}
+  #intro .intro-logo .shimmer{
+    position:absolute;inset:0;
+    background:linear-gradient(115deg, transparent 40%, rgba(255,236,190,0.55) 50%, transparent 60%);
+    background-size:250% 250%;background-position:-40% -40%;
+    mix-blend-mode:overlay;opacity:0;
+    animation:introShimmer 0.8s ease forwards;
+    animation-delay:0.9s;
+  }
+  #intro .intro-tag{
+    position:absolute;bottom:9%;left:50%;transform:translateX(-50%);
+    font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.4em;text-transform:uppercase;
+    color:#e9c98f;opacity:0;text-align:center;white-space:nowrap;
+    animation:introTagIn 0.7s ease forwards;animation-delay:0.8s;
+  }
+  #intro.fade-out{animation:introFadeOut 0.6s ease forwards;pointer-events:none;}
+  @keyframes introBgIn{from{opacity:0;transform:scale(1.06);}to{opacity:1;transform:scale(1);}}
+  @keyframes introLogoIn{
+    0%{opacity:0;transform:scale(0.86) translateY(6px);}
+    55%{opacity:1;transform:scale(1.02) translateY(0);}
+    100%{opacity:1;transform:scale(1) translateY(0);}
+  }
+  @keyframes introShimmer{
+    0%{opacity:0;background-position:-40% -40%;}
+    35%{opacity:1;}
+    100%{opacity:0;background-position:140% 140%;}
+  }
+  @keyframes introTagIn{from{opacity:0;letter-spacing:0.6em;}to{opacity:0.85;letter-spacing:0.4em;}}
+  @keyframes introFadeOut{
+    0%{opacity:1;}
+    100%{opacity:0;visibility:hidden;}
+  }
+  body.intro-lock{overflow:hidden;height:100vh;}
+
+  /* footer (unchanged) */
+  footer{--ink:#26080e;}
+  /* ---------- FOOTER ---------- */
+  footer{
+    position:relative;overflow:hidden;color:var(--cream);
+    background:linear-gradient(180deg, #2a0509 0%, rgba(42,5,9,0) 160px), #2a0509 url('assets/footer-bg.jpg') center right/cover no-repeat;
+    padding:clamp(80px,9vw,130px) clamp(24px,5.5vw,110px) 40px;
+  }
+  .f-top{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(4,minmax(0,1fr));gap:clamp(30px,3vw,60px);align-items:start;max-width:1800px;}
+  .f-brand .footer-logo{font-family:'Cormorant Garamond',serif;text-transform:uppercase;font-size:clamp(30px,2.6vw,44px);letter-spacing:0.34em;line-height:1;white-space:nowrap;}
+  .f-brand .tag{font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-top:20px;}
+  .f-brand i{display:block;width:56px;height:1px;background:var(--gold);margin:28px 0 30px;}
+  .f-brand p{font-family:'Cormorant Garamond',serif;font-size:23px;letter-spacing:0.08em;line-height:1.45;opacity:0.9;}
+  .footer-col h4{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:14px;letter-spacing:0.32em;text-transform:uppercase;color:var(--gold);margin-bottom:0;}
+  .footer-col h4::after{content:'';display:block;width:34px;height:1px;background:var(--gold);margin:18px 0 22px;}
+  .footer-col a{display:block;font-family:'Cormorant Garamond',serif;font-size:19px;margin-bottom:12px;opacity:0.9;transition:color .3s ease,opacity .3s ease,transform .3s ease;}
+  .footer-col a:hover{color:var(--gold-light);opacity:1;transform:translateX(3px);}
+  .f-rule{height:1px;background:linear-gradient(90deg, rgba(184,137,74,0.85), rgba(184,137,74,0.6) 80%, rgba(184,137,74,0));margin:clamp(60px,6vw,110px) 0 44px;}
+  .f-bottom{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:30px;font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:0.14em;}
+  .f-bottom .copy{opacity:0.85;}
+  .f-mark{display:flex;align-items:center;gap:18px;color:var(--gold);}
+  .f-mark i{display:block;width:100px;height:1px;background:currentColor;opacity:0.8;}
+  .f-mark svg{width:36px;height:auto;}
+  .f-legal{justify-self:end;display:flex;align-items:center;gap:36px;}
+  .f-legal a{opacity:0.85;transition:color .3s ease;} .f-legal a:hover{color:var(--gold-light);}
+  .f-legal span{color:var(--gold);opacity:0.8;}
+  .footer-bottom{font-size:11px;opacity:0.45;letter-spacing:0.04em;}
+
+  @media(max-width:860px){
+    footer{padding:70px 24px 34px;background-position:70% center;}
+    .f-top{grid-template-columns:1fr 1fr;gap:40px 24px;}
+    .f-brand{grid-column:1/-1;}
+    .f-bottom{grid-template-columns:1fr;justify-items:center;text-align:center;gap:22px;}
+    .f-legal{justify-self:center;gap:16px;flex-wrap:wrap;justify-content:center;}
+    .f-mark i{width:60px;}
+  }
+</style>
+</head>
+<body class="intro-lock" data-nt="dark">
+
+<div id="intro">
+  <div class="intro-bg"><img src="assets/intro-bg.jpg" alt="" fetchpriority="high" decoding="async"></div>
+  <div class="intro-logo">
+    <img src="assets/kankana-logo-intro.webp" alt="Kankana — Weddings & Beyond" fetchpriority="high">
+    <div class="shimmer"></div>
+  </div>
+  <div class="intro-tag">Weddings &amp; Beyond</div>
+</div>
+
+<div id="sky" aria-hidden="true"></div>
+
+<header class="knav" id="nav">
+  <a class="kn-logo" href="#hero" aria-label="Kankana home"><span>Kankana</span><small>Weddings &amp; Beyond</small></a>
+  <div class="kn-right">
+    <button class="kn-ch" id="chBtn" aria-label="Open chapters"><span>The Chapters</span><i></i></button>
+    <a class="kn-book" href="book.html">Book</a>
+    <a class="kn-enq" href="#contact">Enquire<b>&#8599;</b></a>
+  </div>
+</header>
+
+<aside class="krail" aria-hidden="true"><span id="railNo">01</span><i><b id="railBar"></b></i><em>Scroll</em><small>&darr;</small></aside>
+
+<div class="chx" id="chx" role="dialog" aria-label="Chapters">
+  <button class="chx-close cap" id="chClose">Close <span aria-hidden="true">&#10005;</span></button>
+  <ol>
+    <li style="--i:0"><a href="#hero"><small>01</small>The Arrival</a></li>
+    <li style="--i:1"><a href="#venues"><small>02</small>Explore Venues</a></li>
+    <li style="--i:2"><a href="#welcome"><small>03</small>Through the Gate</a></li>
+    <li style="--i:3"><a href="#celebrate"><small>04</small>The Celebrations</a></li>
+    <li style="--i:4"><a href="#twelve-intro"><small>05</small>The Wedding Day</a></li>
+    <li style="--i:5"><a href="#rhythm"><small>06</small>Rituals &amp; Rhythms</a></li>
+    <li style="--i:6"><a href="#pool"><small>07</small>Less Rush</a></li>
+    <li style="--i:7"><a href="#above"><small>08</small>Above the Everyday</a></li>
+    <li style="--i:8"><a href="#gen"><small>09</small>Every Generation</a></li>
+    <li style="--i:9"><a href="#home"><small>10</small>Coming Home</a></li>
+    <li style="--i:10"><a href="#reach"><small>11</small>Within Reach</a></li>
+    <li style="--i:11"><a href="#contact"><small>12</small>Let&rsquo;s Talk</a></li>
+  </ol>
+  <aside>
+    <div class="arch-sm"><img class="cover" src="assets/hero-frames/f_0217.webp" alt="" loading="lazy"></div>
+    <div class="links cap">
+      <a class="ul" href="book.html">Check availability <b>&#8599;</b></a>
+      <a class="ul" href="my-booking.html">My booking <b>&#8599;</b></a>
+      <a class="ul" href="studio.html">The studio <b>&#8599;</b></a>
+    </div>
+  </aside>
+</div>
+
+<main>
+<!-- 01–03 · ONE CONTINUOUS FILM: arrival → explore venues → through the gate -->
+<section class="scene" id="film" data-theme="dark">
+  <span class="mk" id="hero" data-ch="01" style="top:0"></span>
+  <span class="mk" id="venues" data-ch="02" style="top:390vh"></span>
+  <span class="mk" id="welcome" data-ch="03" style="top:500vh"></span>
+  <div class="pin film-pin">
+    <div class="film-clip" id="filmClip">
+    <img class="cover" src="assets/hero-frames/f_0001.webp" alt="Aerial view of a sandstone palace at golden hour" fetchpriority="high">
+    <canvas class="fc" id="heroCanvas" aria-hidden="true"></canvas>
+    <div class="hero-shade"></div>
+    <div class="hero-lg" id="heroLg"></div>
+    <div class="hero-dim" id="heroDim"></div>
+    <div class="hero-title" id="heroTitle">
+      <h1 class="dcaps">Kankana</h1>
+      <div class="cap"><i></i>A celebration that awaits you</div>
+    </div>
+    <div class="hero-ch1" id="heroCh1">
+      <h2 class="dcaps">Where the desert<br>keeps its gold.</h2>
+      <div class="cap">Kankana &middot; Venues for meaningful moments</div>
+    </div>
+    <div class="hero-ch2" id="heroCh2">
+      <h2 class="dcaps">Why Kankana?</h2>
+      <p class="body">Chosen for ritual. Designed for gathering.<br>Kankana is where a celebration becomes a way of remembering.</p>
+    </div>
+    <img class="hero-mark" id="heroMark" src="assets/kankana-logo-intro.webp" alt="">
+  
+    <div class="ex" id="explore" data-view="overview" aria-label="Explore venues">
+  <div class="ex-cover">
+    <div class="ex-zoom" id="exZoom"><img src="assets/hero-frames/f_0049.webp" alt="The palace courtyard, gate and suites" loading="lazy"></div>
+    <div class="ex-scan" id="exScan"></div>
+    <div id="exHs"></div>
+  </div>
+  <div class="ex-shade"></div>
+  <div class="ex-guide v"></div>
+  <div class="ex-list" id="exList" aria-label="Spaces"></div>
+
+  <div class="ex-layer ex-ovl">
+    <div class="ex-ov">
+      <h2 class="dcaps">Explore<br>Venues</h2>
+      <div class="rule"></div>
+      <div class="cap" style="opacity:.75">Select a space to discover the celebration</div>
+      <div class="ex-now" id="exNow"></div>
+    </div>
+  </div>
+
+  <div class="ex-layer ex-spl">
+    <div class="ex-sp-head">
+      <button class="ex-back cap" id="exBack"><i></i>Back to the palace</button>
+      <h3 class="dcaps" id="spName">The Water Court</h3>
+      <div class="cap" id="spZones"></div>
+    </div>
+    <div class="ex-side l" id="spL"></div>
+    <div class="ex-plan" id="exPlan"></div>
+    <div class="ex-side r" id="spR"></div>
+    <div class="ex-cap cap" id="spCap"></div>
+  </div>
+
+  <div class="ex-layer ex-znl">
+    <div class="ex-zp">
+      <button class="ex-back cap" id="zBack"><i></i>Back to the space</button>
+      <div class="cap gl" id="zSpace" style="margin-top:22px"></div>
+      <h3 class="dcaps" id="zName"></h3>
+      <div class="cap" id="zType" style="opacity:.6"></div>
+      <dl id="zDl"></dl>
+      <div class="btns">
+        <button class="pill" id="zToggle">View photo <span aria-hidden="true">&#8964;</span></button>
+        <a class="pill solid" href="book.html">Check dates &rarr;</a>
+      </div>
+    </div>
+    <div class="zc" id="zCard">
+      <div class="zc-face zc-plan" id="zPlan"></div>
+      <div class="zc-face zc-photo"><img id="zPhoto" alt=""></div>
+    </div>
+  </div>
+</div>
+
+    <div class="wc l"><div class="cap gl">I &middot; The Gate</div><h3 class="disp">Doors that open<br><em>for you alone.</em></h3><p class="body">Carved teak and lantern-lit thresholds, opened at dusk for your baraat.</p></div>
+    <div class="wc r"><div class="cap gl">II &middot; The Water Court</div><h3 class="disp">A courtyard built<br><em>to hold the evening.</em></h3><p class="body">Still water, floating diyas and a long table laid along its edge.</p></div>
+    <div class="wc l"><div class="cap gl">III &middot; The Colonnade</div><h3 class="disp">Every arch,<br><em>one view.</em></h3><p class="body">Pheras beneath carved pillars, with nothing ahead but sky.</p></div>
+    <div class="wc r"><div class="cap gl">IV &middot; The Terrace</div><h3 class="disp">Stay until the sun<br><em>clears the fields.</em></h3><p class="body">Mornings after, slow and golden &mdash; the celebration continues.</p></div>
+    <div class="wc-end" id="welEnd">
+      <a class="back cap" href="#venues"><i></i>Back outside</a>
+      <h2 class="dcaps">Welcome to Kankana</h2>
+      <a class="go cap ul" href="#celebrate">Explore Kankana <b>&darr;</b></a>
+    </div>
+  
+    </div>
+    <div class="cue" id="heroCue"><span></span>Scroll</div>
+  </div>
+</section>
+
+<!-- 04 · STEP INSIDE THE CELEBRATION -->
+<section class="lt rv" id="celebrate" data-theme="sky" data-ch="04">
+  <div class="cel-glow" id="celGlow" aria-hidden="true"><canvas></canvas><canvas></canvas><canvas></canvas><canvas></canvas></div>
+  <svg class="sprig" style="left:-40px;top:30px" viewBox="0 0 200 220" fill="none" stroke="#b8894a" stroke-width="1" aria-hidden="true"><path d="M30 215 C 60 160, 90 120, 150 40"/><path d="M62 160 C 30 150, 15 125, 20 100 C 45 110, 60 132, 62 160 Z"/><path d="M80 130 C 60 105, 60 80, 75 60 C 92 80, 92 108, 80 130 Z"/><path d="M100 108 C 120 95, 145 95, 165 108 C 145 122, 120 122, 100 108 Z"/><path d="M122 76 C 110 55, 115 30, 135 15 C 145 38, 138 60, 122 76 Z"/></svg>
+  <div class="cel-head">
+    <div class="cel-tr cap sm">Kankana &middot; Weddings &amp; Beyond</div>
+    <div class="cap fade">The celebrations</div>
+    <h2 class="disp"><span class="ln"><span>Step inside</span></span><span class="ln"><span style="--d:.12s"><em>the celebration.</em></span></span></h2>
+    <p class="body fade" style="--d:.3s">Four occasions, and the lives they are drawn around.</p>
+  </div>
+  <div class="arches">
+    <button class="arch" data-img="assets/celebrate/mehndi-poster.jpg" data-video="assets/celebrate/mehndi.mp4" data-tint="#e3a019" data-title="The<br>Mehndi" data-sub="Hands painted, stories shared." data-body="An afternoon of henna, music and marigolds in the garden pavilions.">
+      <div class="flip"><div class="inv-front" aria-hidden="true"><svg class="inv-orn" viewBox="0 0 64 30" aria-hidden="true"><path d="M32 2C26 9 26 17 32 25C38 17 38 9 32 2Z M32 25C24 20 15 18 6 21C14 13 24 14 32 25Z M32 25C40 20 49 18 58 21C50 13 40 14 32 25Z" fill="none" stroke="currentColor" stroke-width=".9"/><path d="M8 28H56" stroke="currentColor" stroke-width=".7"/><circle cx="32" cy="28" r="1.6" fill="currentColor"/></svg><div class="inv-k">Kankana requests your presence</div><div class="inv-at">at the</div><div class="inv-name">Mehndi</div><div class="inv-rule"><i></i></div><div class="inv-when">An afternoon of henna<br><span>in the garden pavilions</span></div><div class="inv-foot"><span>I</span>Turn the card</div></div><div class="aw" style="--d:.1s"><img src="assets/celebrate/mehndi-poster.jpg" alt="Bridal mehndi" loading="lazy"><div class="ci"><div><h4>The Mehndi</h4><p>Hands painted, stories shared.</p></div><i class="cb" aria-hidden="true">&rarr;</i></div></div></div>
+    </button>
+    <button class="arch" data-img="https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?w=2000&q=80&auto=format&fit=crop" data-video="assets/celebrate/pheras.mp4" data-tint="#d2421a" data-title="The<br>Pheras" data-sub="Seven steps, one fire." data-body="Vows beneath a mandap of gold and flowers, framed by the colonnade.">
+      <div class="flip"><div class="inv-front" aria-hidden="true"><svg class="inv-orn" viewBox="0 0 64 30" aria-hidden="true"><path d="M32 2C26 9 26 17 32 25C38 17 38 9 32 2Z M32 25C24 20 15 18 6 21C14 13 24 14 32 25Z M32 25C40 20 49 18 58 21C50 13 40 14 32 25Z" fill="none" stroke="currentColor" stroke-width=".9"/><path d="M8 28H56" stroke="currentColor" stroke-width=".7"/><circle cx="32" cy="28" r="1.6" fill="currentColor"/></svg><div class="inv-k">Kankana requests your presence</div><div class="inv-at">at the</div><div class="inv-name">Pheras</div><div class="inv-rule"><i></i></div><div class="inv-when">At dusk<br><span>beneath the colonnade</span></div><div class="inv-foot"><span>II</span>Turn the card</div></div><div class="aw" style="--d:.35s"><img src="https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?w=800&q=80&auto=format&fit=crop" alt="Gold floral mandap" loading="lazy"><div class="ci"><div><h4>The Pheras</h4><p>Seven steps, one fire.</p></div><i class="cb" aria-hidden="true">&rarr;</i></div></div></div>
+    </button>
+    <button class="arch" data-img="https://images.unsplash.com/photo-1551564874-2c247864797e?w=2000&q=80&auto=format&fit=crop" data-video="assets/celebrate/sangeet.mp4" data-tint="#8f5ad6" data-title="The<br>Sangeet" data-sub="A night made for dancing." data-body="Lights over the water court, a stage for every family performance.">
+      <div class="flip"><div class="inv-front" aria-hidden="true"><svg class="inv-orn" viewBox="0 0 64 30" aria-hidden="true"><path d="M32 2C26 9 26 17 32 25C38 17 38 9 32 2Z M32 25C24 20 15 18 6 21C14 13 24 14 32 25Z M32 25C40 20 49 18 58 21C50 13 40 14 32 25Z" fill="none" stroke="currentColor" stroke-width=".9"/><path d="M8 28H56" stroke="currentColor" stroke-width=".7"/><circle cx="32" cy="28" r="1.6" fill="currentColor"/></svg><div class="inv-k">Kankana requests your presence</div><div class="inv-at">at the</div><div class="inv-name">Sangeet</div><div class="inv-rule"><i></i></div><div class="inv-when">An evening of music<br><span>over the water court</span></div><div class="inv-foot"><span>III</span>Turn the card</div></div><div class="aw" style="--d:.6s"><img src="https://images.unsplash.com/photo-1551564874-2c247864797e?w=800&q=80&auto=format&fit=crop" alt="Golden lights at night" loading="lazy"><div class="ci"><div><h4>The Sangeet</h4><p>A night made for dancing.</p></div><i class="cb" aria-hidden="true">&rarr;</i></div></div></div>
+    </button>
+    <button class="arch" data-img="https://images.unsplash.com/photo-1677768062274-fdd45caac233?w=2000&q=80&auto=format&fit=crop" data-video="assets/celebrate/reception.mp4" data-tint="#ead1a6" data-title="The<br>Reception" data-sub="Everyone you love, in one room." data-body="Long tables, candlelight and a toast that lasts until morning.">
+      <div class="flip"><div class="inv-front" aria-hidden="true"><svg class="inv-orn" viewBox="0 0 64 30" aria-hidden="true"><path d="M32 2C26 9 26 17 32 25C38 17 38 9 32 2Z M32 25C24 20 15 18 6 21C14 13 24 14 32 25Z M32 25C40 20 49 18 58 21C50 13 40 14 32 25Z" fill="none" stroke="currentColor" stroke-width=".9"/><path d="M8 28H56" stroke="currentColor" stroke-width=".7"/><circle cx="32" cy="28" r="1.6" fill="currentColor"/></svg><div class="inv-k">Kankana requests your presence</div><div class="inv-at">at the</div><div class="inv-name">Reception</div><div class="inv-rule"><i></i></div><div class="inv-when">From sunset until morning<br><span>in the great hall</span></div><div class="inv-foot"><span>IV</span>Turn the card</div></div><div class="aw" style="--d:.85s"><img src="https://images.unsplash.com/photo-1677768062274-fdd45caac233?w=800&q=80&auto=format&fit=crop" alt="Reception hall" loading="lazy"><div class="ci"><div><h4>The Reception</h4><p>Everyone you love, in one room.</p></div><i class="cb" aria-hidden="true">&rarr;</i></div></div></div>
+    </button>
+  </div>
+</section>
+
+<div class="room" id="room" aria-modal="true" role="dialog" aria-label="Celebrations">
+  <div class="room-img"><canvas id="roomGl" aria-hidden="true"></canvas><img id="roomImg" alt=""></div>
+  <div class="room-shade"></div>
+  <div class="oc-t" id="ocT">
+    <div class="cap rt" id="ocKick">The celebrations</div>
+    <h3 class="oc-name rt" id="roomTitle" style="--d:.08s"></h3>
+    <p class="oc-sub rt" id="roomSub" style="--d:.16s"></p>
+  </div>
+  <p class="oc-body" id="roomBody"></p>
+  <nav class="oc-nav" id="ocNav" aria-label="Occasions"></nav>
+  <div class="oc-count cap"><span id="ocNo">01</span> &mdash; 04</div>
+  <a class="oc-cta" href="book.html">Plan<br>yours</a>
+  <div class="oc-hint cap">Scroll to explore</div>
+  <button class="room-back cap" id="roomBack">&larr; Celebrations</button>
+</div>
+
+
+<!-- 05 · TWELVE WAYS -->
+<section class="lt rv" id="twelve-intro" data-theme="sky" data-ch="05">
+  <div class="cap fade">A wedding day, hour by hour</div>
+  <h2 class="disp"><span class="blurin">Twelve ways</span><span class="blurin" style="--d:.2s"><em>to celebrate.</em></span></h2>
+  <p class="body fade" style="--d:.4s">From the first haldi at seven to lanterns at midnight &mdash; scroll through a Kankana wedding day.</p>
+</section>
+<section class="scene" id="twelve" data-theme="light">
+  <div class="pin dy">
+    <div class="dy-head cap sm"><span>A wedding day, hour by hour</span><span class="dy-count" id="dyCount">01 / 12</span></div>
+    <svg class="dy-arc" viewBox="0 0 1000 230" aria-hidden="true">
+      <path class="dy-arc-bg" d="M40 220 A460 200 0 0 1 960 220"/>
+      <path class="dy-arc-fg" id="dyArc" d="M40 220 A460 200 0 0 1 960 220"/>
+      <g id="dyTicks"></g>
+      <g id="dyOrb"><circle class="dy-glow" r="26"/><circle class="dy-sun" r="9"/><path class="dy-moon" d="M5 -8.66 A10 10 0 1 0 5 8.66 A10 10 0 0 1 5 -8.66 Z"/></g>
+      <line class="dy-horizon" x1="0" y1="220" x2="1000" y2="220"/>
+    </svg>
+    <div class="dy-times" aria-live="polite">
+      <div class="dy-t on"><span>7:00</span><small>am</small></div>
+      <div class="dy-t"><span>9:00</span><small>am</small></div>
+      <div class="dy-t"><span>11:00</span><small>am</small></div>
+      <div class="dy-t"><span>1:00</span><small>pm</small></div>
+      <div class="dy-t"><span>3:00</span><small>pm</small></div>
+      <div class="dy-t"><span>4:00</span><small>pm</small></div>
+      <div class="dy-t"><span>5:00</span><small>pm</small></div>
+      <div class="dy-t"><span>6:00</span><small>pm</small></div>
+      <div class="dy-t"><span>7:00</span><small>pm</small></div>
+      <div class="dy-t"><span>8:30</span><small>pm</small></div>
+      <div class="dy-t"><span>10:00</span><small>pm</small></div>
+      <div class="dy-t"><span>12:00</span><small>am</small></div>
+    </div>
+    <div class="dy-texts">
+      <div class="dy-x on"><div class="cap sm">01 &middot; Garden Pavilions</div><h3 class="disp">Haldi Morning</h3><p class="body">Turmeric, laughter and marigolds under the banyan.</p></div>
+      <div class="dy-x"><div class="cap sm">02 &middot; The Water Court</div><h3 class="disp">Poolside Brunch</h3><p class="body">Slow coffee, fresh fruit and the family arriving.</p></div>
+      <div class="dy-x"><div class="cap sm">03 &middot; Mehndi Garden</div><h3 class="disp">Mehndi & Dholki</h3><p class="body">Henna, songs and stories, one hand at a time.</p></div>
+      <div class="dy-x"><div class="cap sm">04 &middot; Banyan Deck</div><h3 class="disp">Welcome Lunch</h3><p class="body">Two families, one long table.</p></div>
+      <div class="dy-x"><div class="cap sm">05 &middot; The Palace Suite</div><h3 class="disp">Getting Ready</h3><p class="body">Silk, jewels and a quiet room full of light.</p></div>
+      <div class="dy-x"><div class="cap sm">06 &middot; The Palace Suite</div><h3 class="disp">The Bride</h3><p class="body">A last look in the mirror. The moment everyone waits for.</p></div>
+      <div class="dy-x"><div class="cap sm">07 &middot; The Gate</div><h3 class="disp">Baraat at the Gate</h3><p class="body">Dhol at the gate, the doors thrown open.</p></div>
+      <div class="dy-x"><div class="cap sm">08 &middot; The Colonnade</div><h3 class="disp">Pheras at the Mandap</h3><p class="body">Seven steps around the fire, as the light turns gold.</p></div>
+      <div class="dy-x"><div class="cap sm">09 &middot; The Sunset Terrace</div><h3 class="disp">Sunset on the Terrace</h3><p class="body">Portraits framed by the arches, the fields on fire.</p></div>
+      <div class="dy-x"><div class="cap sm">10 &middot; The Water Court</div><h3 class="disp">Water-Court Cocktails</h3><p class="body">Floating diyas and the first toast.</p></div>
+      <div class="dy-x"><div class="cap sm">11 &middot; Court Stage</div><h3 class="disp">Reception & Sangeet</h3><p class="body">Speeches, the first dance, and every cousin on the floor.</p></div>
+      <div class="dy-x"><div class="cap sm">12 &middot; The Sunset Terrace</div><h3 class="disp">Lantern Send-off</h3><p class="body">Lights on the water as the day becomes a memory.</p></div>
+    </div>
+    <div class="dy-stage">
+      <figure class="dy-fig on"><img src="https://images.unsplash.com/photo-1574267498814-ebfb802ec01e?w=1100&q=80&auto=format&fit=crop" alt="Marigolds for the haldi" loading="lazy"><figcaption class="cap sm">7:00 am &middot; Haldi Morning</figcaption></figure>
+      <figure class="dy-fig"><img src="https://images.unsplash.com/photo-1607250844650-eae520552a4c?w=1100&q=80&auto=format&fit=crop" alt="Poolside at the villa" loading="lazy"><figcaption class="cap sm">9:00 am &middot; Poolside Brunch</figcaption></figure>
+      <figure class="dy-fig"><img src="https://images.unsplash.com/flagged/1557695742-6ddd2cd63a5d?w=1100&q=80&auto=format&fit=crop" alt="Bridal mehndi" loading="lazy"><figcaption class="cap sm">11:00 am &middot; Mehndi & Dholki</figcaption></figure>
+      <figure class="dy-fig"><img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1100&q=80&auto=format&fit=crop" alt="Lunch table" loading="lazy"><figcaption class="cap sm">1:00 pm &middot; Welcome Lunch</figcaption></figure>
+      <figure class="dy-fig"><img src="https://images.unsplash.com/photo-1718894071528-1108a094cc78?w=1100&q=80&auto=format&fit=crop" alt="The palace suite" loading="lazy"><figcaption class="cap sm">3:00 pm &middot; Getting Ready</figcaption></figure>
+      <figure class="dy-fig tall"><video src="assets/baraat.mp4" poster="assets/baraat-poster.jpg" muted loop playsinline preload="metadata" aria-label="Bride in red and gold"></video><figcaption class="cap sm">4:00 pm &middot; The Bride</figcaption></figure>
+      <figure class="dy-fig"><img src="assets/hero-frames/f_0085.webp" alt="The palace gate" loading="lazy"><figcaption class="cap sm">5:00 pm &middot; Baraat at the Gate</figcaption></figure>
+      <figure class="dy-fig"><img src="https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?w=1100&q=80&auto=format&fit=crop" alt="Gold floral mandap" loading="lazy"><figcaption class="cap sm">6:00 pm &middot; Pheras at the Mandap</figcaption></figure>
+      <figure class="dy-fig"><img src="assets/hero-frames/f_0217.webp" alt="Sunset through the arches" loading="lazy"><figcaption class="cap sm">7:00 pm &middot; Sunset on the Terrace</figcaption></figure>
+      <figure class="dy-fig"><img src="assets/hero-frames/f_0133.webp" alt="The water court at dusk" loading="lazy"><figcaption class="cap sm">8:30 pm &middot; Water-Court Cocktails</figcaption></figure>
+      <figure class="dy-fig"><img src="https://images.unsplash.com/photo-1677768062274-fdd45caac233?w=1100&q=80&auto=format&fit=crop" alt="The reception" loading="lazy"><figcaption class="cap sm">10:00 pm &middot; Reception & Sangeet</figcaption></figure>
+      <figure class="dy-fig"><img src="https://images.unsplash.com/photo-1551564874-2c247864797e?w=1100&q=80&auto=format&fit=crop" alt="Lanterns at midnight" loading="lazy"><figcaption class="cap sm">12:00 am &middot; Lantern Send-off</figcaption></figure>
+    </div>
+    <div class="dy-rail cap sm"><span class="on">7:00<small>am</small></span><span class="">9:00<small>am</small></span><span class="">11:00<small>am</small></span><span class="">1:00<small>pm</small></span><span class="">3:00<small>pm</small></span><span class="">4:00<small>pm</small></span><span class="">5:00<small>pm</small></span><span class="">6:00<small>pm</small></span><span class="">7:00<small>pm</small></span><span class="">8:30<small>pm</small></span><span class="">10:00<small>pm</small></span><span class="">12:00<small>am</small></span></div>
+  </div>
+</section>
+
+<!-- interlude · the morning after (night → dawn) -->
+<section class="dawn" id="dawn" data-theme="sky">
+  <div class="dn-sun" aria-hidden="true"></div>
+  <div class="dn-t rv">
+    <div class="cap fade">The morning after</div>
+    <h2 class="disp"><span class="ln"><span>And then,</span></span><span class="ln"><span style="--d:.12s"><em>a slower day.</em></span></span></h2>
+  </div>
+</section>
+
+<!-- 06 · RITUALS & RHYTHMS (horizontal) -->
+<section class="scene lt" id="rhythm" data-theme="sky" data-ch="06">
+  <div class="pin">
+    <div class="rh-head cap sm"><span>Rituals &amp; rhythms</span><span>The Kankana collection</span></div>
+    <div class="rh-track">
+      <div class="rh-p rh-1">
+        <h2 class="t disp">A slower<br>kind of<br><em>celebration.</em></h2>
+        <figure class="archf"><img data-par="-.08" src="assets/hero-frames/f_0181.webp" alt="Carved arches at dusk"></figure>
+        <div class="c"><div class="cap sm">01 &middot; The arrival</div><p class="body">Lanterns lit, doors open, nothing to rush.</p></div>
+      </div>
+      <div class="rh-p rh-2">
+        <h2 class="t disp">Find your<br><em>rhythm.</em></h2>
+        <figure class="f1"><img data-par="-.06" src="https://images.unsplash.com/photo-1668277157922-ecd8330ea809?w=1400&q=80&auto=format&fit=crop" alt="Open-air lounge"></figure>
+        <figure class="f2"><img data-par=".05" src="https://images.unsplash.com/photo-1651108066162-40a78ed6bedb?w=700&q=80&auto=format&fit=crop" alt="Teak doors to the garden"></figure>
+        <div class="c"><div class="cap sm">02 &middot; Haldi &amp; yoga</div><p class="body">A little movement.<br>A moment of stillness.</p></div>
+      </div>
+      <div class="rh-p rh-3">
+        <figure class="f1"><img data-par="-.05" src="https://images.unsplash.com/photo-1677768062274-fdd45caac233?w=1300&q=80&auto=format&fit=crop" alt="Reception hall"></figure>
+        <h2 class="t disp">Room to<br><em>dance.</em></h2>
+        <figure class="f2"><img data-par=".06" src="https://images.unsplash.com/photo-1551564874-2c247864797e?w=700&q=80&auto=format&fit=crop" alt="Celebration lights"></figure>
+        <div class="c"><div class="cap sm">03 &middot; The sangeet</div><p class="body">Make time for the floor.<br>Your own momentum.</p></div>
+      </div>
+      <div class="rh-p rh-4">
+        <figure><img data-par="-.04" src="assets/cta-bg.jpg" alt="Candlelit table"></figure>
+        <h2 class="t disp">Time to<br><em>exhale.</em></h2>
+        <div class="c"><div class="cap sm">04 &middot; The quiet hours</div><p class="body">Warmth. Quiet.<br>A welcome pause.</p></div>
+      </div>
+      <div class="rh-p rh-5">
+        <h2 class="t disp">Simply <em>be.</em></h2>
+        <figure class="archf"><img data-par="-.08" src="https://images.unsplash.com/photo-1607250844650-eae520552a4c?w=1100&q=80&auto=format&fit=crop" alt="Villa pool"></figure>
+        <div class="c"><div class="cap sm">05 &middot; The garden</div><p class="body">Leave the hurry<br>at the door.</p></div>
+      </div>
+    </div>
+    <div class="rh-exp" id="rhExp"><img src="https://images.unsplash.com/photo-1607250844650-eae520552a4c?w=2200&q=80&auto=format&fit=crop" alt=""></div>
+  </div>
+</section>
+
+<!-- 07 · NOTHING TO DO → LESS RUSH -->
+<section class="scene handoff" id="pool" data-theme="dark" data-ch="07">
+  <div class="pin">
+    <div class="pl-bg"><img src="https://images.unsplash.com/photo-1607250844650-eae520552a4c?w=2200&q=80&auto=format&fit=crop" alt="Infinity pool at the villa" loading="lazy"></div>
+    <div class="pl-shade"></div>
+    <div class="pl-t"><h2 class="disp">Nothing to do.<br><em>Everything to feel.</em></h2></div>
+    <div class="pl-hot cap sm"><i></i>The pool</div>
+    <div class="pl-circle">
+      <div class="pl-in">
+        <div class="cap">The pleasure of slowing</div>
+        <h2 class="disp">Less rush.<br><em>More Kankana.</em></h2>
+      </div>
+      <div class="pl-k">K.</div>
+      <div class="pl-thumb"><img src="assets/hero-frames/f_0229.webp" alt="" loading="lazy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 · ABOVE THE EVERYDAY -->
+<section class="scene lt" id="above" data-theme="light" data-ch="08">
+  <div class="pin">
+    <div class="ab-pre cap">The terrace</div>
+    <div class="ab-img"><img src="assets/hero-frames/f_0217.webp" alt="Sunset through the terrace arches" loading="lazy"></div>
+    <div class="ab-t"><h2 class="disp">Above the<br><em>everyday.</em></h2></div>
+    <div class="ab-foot"><p>A table for friends.<br>An evening that lingers.</p><div class="cap sm">Space to gather<br>Time to connect</div></div>
+  </div>
+</section>
+
+<!-- 09 · FOR EVERY GENERATION -->
+<section class="lt rv handoff-flat" id="gen" data-theme="sky" data-ch="09">
+  <div class="gen-t">
+    <div class="cap fade">Little moments, lasting memories</div>
+    <h2 class="disp"><span class="ln"><span>For every</span></span><span class="ln"><span style="--d:.12s"><em>generation.</em></span></span></h2>
+  </div>
+  <div class="gen-arch" id="genArch"><img src="assets/hero-frames/f_0217.webp" alt="Sunset through the terrace arches"></div>
+  <div class="gen-small fade" style="--d:.35s"><img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=700&q=80&auto=format&fit=crop" alt="Family dinner table" loading="lazy"></div>
+  <div class="gen-c fade" style="--d:.3s"><div class="cap sm">Grandparents &middot; Cousins &middot; Little ones</div><p>Room for their stories.<br>A little time for yours.</p></div>
+  <div class="gen-word">together.</div>
+</section>
+
+<!-- 10 · THE LUXURY OF COMING HOME -->
+<section class="wine rv" id="home" data-theme="sky" data-ch="10">
+  <div class="hm-top cap"><span>The feeling of home</span><i></i></div>
+  <div class="hm-stage">
+    <figure class="hm-main"><img src="https://images.unsplash.com/photo-1613553474179-e1eda3ea5734?w=1800&q=80&auto=format&fit=crop" alt="Suite with garden doors" loading="lazy"></figure>
+    <figure class="hm-a"><img src="https://images.unsplash.com/photo-1718894071528-1108a094cc78?w=800&q=80&auto=format&fit=crop" alt="Bedroom" loading="lazy"></figure>
+    <figure class="hm-b"><img src="https://images.unsplash.com/photo-1668277157922-ecd8330ea809?w=900&q=80&auto=format&fit=crop" alt="Lounge" loading="lazy"></figure>
+    <h2 class="hm-t disp">The luxury of<br><em>coming home</em></h2>
+    <div class="hm-c"><div class="cap sm gl">Curated stays</div><p class="body">Natural light.<br>Thoughtful spaces.<br>A stay that feels like you.<br><a class="ul cap sm" href="book.html?venue=ubud" style="margin-top:14px">Explore stays <b>&rarr;</b></a></p></div>
+  </div>
+</section>
+
+<!-- 11 · LIFE, CONSIDERED -->
+<section class="dk rv" id="considered" data-theme="sky">
+  <div>
+    <div class="cap fade">Celebration essentials</div>
+    <h2 class="disp"><span class="ln"><span>Life,</span></span><span class="ln"><span style="--d:.12s"><em>considered.</em></span></span></h2>
+    <div class="cs-img fade" style="--d:.2s"><img src="assets/hero-frames/f_0205.webp" alt="Lounge beneath the colonnade" loading="lazy"></div>
+    <p class="cs-cap fade" style="--d:.3s">The thoughtful details<br>that make a celebration.</p>
+  </div>
+  <div class="cs-list">
+    <div class="fade" style="--d:.1s"><div class="cap sm" style="opacity:.55">Largest gathering</div><div class="v"><span data-count="400">0</span></div><p class="body">Guests at Bagan Temple Gardens, our largest venue.</p></div>
+    <div class="fade" style="--d:.2s"><div class="cap sm" style="opacity:.55">Celebration length</div><div class="v">5 days</div><p class="body">From haldi to farewell, planned by one team throughout.</p></div>
+    <div class="fade" style="--d:.3s"><div class="cap sm" style="opacity:.55">Kitchens</div><div class="v">Chef-led</div><p class="body">Tasting menus and live counters, cooked on site.</p></div>
+    <div class="fade" style="--d:.4s"><div class="cap sm" style="opacity:.55">Florals</div><div class="v"><em class="serif">By hand</em></div><p class="body">Flowers and details arranged by hand for every celebration.</p></div>
+  </div>
+</section>
+
+<!-- 12 · WITHIN REACH -->
+<section class="rv" id="reach" data-theme="dark" data-ch="11">
+  <div class="rc-bg"><img src="assets/hero-frames/f_0013.webp" alt="" loading="lazy"></div>
+  <div class="cap fade gl">Bali &middot; Myanmar &amp; beyond</div>
+  <h2 class="disp"><span class="ln"><span>Your celebration.</span></span><span class="ln"><span style="--d:.12s"><em>Within reach.</em></span></span></h2>
+  <div class="rc-rule cap sm fade"><span>Kankana</span><span>Guests hosted at each venue</span></div>
+  <div class="rc-stats">
+    <div class="fade" style="--d:.1s"><div class="n"><span data-count="250">0</span><small>guests</small></div><p>Clifftop Pavilion</p><div class="cap sm">Uluwatu, Bali</div></div>
+    <div class="fade" style="--d:.2s"><div class="n"><span data-count="120">0</span><small>guests</small></div><p>Villa Kancana</p><div class="cap sm">Ubud, Bali</div></div>
+    <div class="fade" style="--d:.3s"><div class="n"><span data-count="300">0</span><small>guests</small></div><p>Inle Lake Pavilion</p><div class="cap sm">Myanmar</div></div>
+    <div class="fade" style="--d:.4s"><div class="n"><span data-count="400">0</span><small>guests</small></div><p>Bagan Temple Gardens</p><div class="cap sm">Myanmar</div></div>
+  </div>
+  <div class="rc-foot fade"><p class="serif">Four venues.<br>One family of celebrations.</p><a class="cap ul" href="book.html">Check availability <b>&#8599;</b></a></div>
+</section>
+
+<!-- 13 · EVERYTHING WITHIN REACH -->
+<section class="dk rv" id="plan" data-theme="sky">
+  <div class="cap fade">The palace at a glance</div>
+  <h2 class="disp"><span class="ln"><span>Everything</span></span><span class="ln"><span style="--d:.12s"><em>within reach.</em></span></span></h2>
+  <p class="body fade" style="--d:.25s">Six spaces, drawn around one celebration.</p>
+  <div class="pn-stage">
+    <div class="pn-card">
+      <img src="assets/hero-frames/f_0049.webp" alt="The palace from above" loading="lazy">
+      <a class="pn-pin" href="#venues" style="left:50%;top:80%"><b>The Gate</b><i></i><s></s></a>
+      <a class="pn-pin" href="#venues" style="left:50%;top:52%"><b>The Water Court</b><i></i><s></s></a>
+      <a class="pn-pin" href="#venues" style="left:58%;top:35%"><b>The Colonnade</b><i></i><s></s></a>
+      <a class="pn-pin" href="#venues" style="left:22%;top:50%"><b>Garden Pavilions</b><i></i><s></s></a>
+      <a class="pn-pin" href="#venues" style="left:62%;top:17%"><b>The Suites</b><i></i><s></s></a>
+      <a class="pn-pin" href="#venues" style="left:90%;top:26%"><b>Sunset Terrace</b><i></i><s></s></a>
+    </div>
+  </div>
+  <div class="pn-cap cap sm">Tap a space to explore it</div>
+</section>
+
+<!-- 14 · YOUR NEXT CHAPTER -->
+<section class="scene" id="chapter" data-theme="dark">
+  <div class="pin cp">
+    <div class="cp-top cap">This is your next chapter</div>
+    <div class="cp-word dcaps">Kankana</div>
+    <div class="cp-img"><img src="assets/hero-frames/f_0001.webp" alt="The palace at sunset" loading="lazy"></div>
+    <div class="cp-sub"><h3 class="disp">Make room for<br><em>a different rhythm.</em></h3><a class="ul" href="#contact">Enquire about Kankana <b>&#8599;</b></a></div>
+    <div class="cp-end">
+      <div>
+        <h2 class="dcaps">Explore<br>Venues</h2>
+        <div class="rule"></div>
+        <a class="cap ul" href="#venues">Select a space to discover the celebration <b>&#8599;</b></a>
+      </div>
+      <img class="mark" src="assets/kankana-logo-intro.webp" alt="">
+    </div>
+    <div class="cp-dark"></div>
+  </div>
+</section>
+
+<!-- 15 · LET'S TALK -->
+<section id="contact" data-theme="sky" data-ch="12">
+  <div class="ct-strip">
+    <img src="assets/hero-frames/f_0229.webp" alt="" loading="lazy">
+    <div class="l"><b>Kankana</b><span class="cap sm">Weddings &amp; Beyond</span></div>
+    <img class="r" src="assets/kankana-logo-intro.webp" alt="">
+  </div>
+  <div class="ct-body rv">
+    <div class="cap fade gl">Your next chapter</div>
+    <h2 class="disp"><span class="ln"><span>Let&rsquo;s talk</span></span><span class="ln"><span style="--d:.12s"><em>about Kankana.</em></span></span></h2>
+    <div class="ct-btns fade" style="--d:.3s">
+      <button class="pill solid" data-film><i>&#9654;</i>Watch the film</button>
+      <a class="ul" href="book.html">Check dates <b>&#8599;</b></a>
+      <a class="ul" href="my-booking.html">Track your booking <b>&#8599;</b></a>
+    </div>
+    <div class="ct-info fade" style="--d:.4s"><a href="mailto:hello@kankana.in">hello@kankana.in</a><a href="tel:+919000000000">+91 90000 00000</a></div>
+    <div class="ct-small cap sm fade" style="--d:.5s">Kankana &middot; Weddings &amp; Beyond &middot; Bengaluru</div>
+  </div>
+</section>
+
+<!-- 16 · OUTRO -->
+<section class="scene" id="outro" data-theme="sky">
+  <div class="pin ot">
+    <svg class="ot-arch" viewBox="0 0 150 230" aria-hidden="true"><path id="otPath" d="M8 222 L142 222 M22 222 L22 80 C22 40 46 12 75 12 C104 12 128 40 128 80 L128 222 M40 222 L40 86 C40 56 56 32 75 32 C94 32 110 56 110 86 L110 222"/></svg>
+    <div class="ot-glow"></div>
+    <img class="ot-logo" src="assets/kankana-logo-intro.webp" alt="Kankana — Weddings &amp; Beyond">
+    <div class="ot-tag cap">Venues for meaningful moments</div>
+  </div>
+</section>
+</main>
+
+<div class="fxm" id="filmModal" role="dialog" aria-label="Kankana film">
+  <div class="fx-top cap"><span>Kankana &middot; The film</span><button class="cap" id="fxClose">Close <span aria-hidden="true">&#10005;</span></button></div>
+  <div class="fx-stage">
+    <canvas class="fc" id="fxCanvas"></canvas>
+    <div class="fx-cap" id="fxCap">The Arrival</div>
+    <div class="fx-ctrl"><button id="fxPlay" aria-label="Pause">&#10074;&#10074;</button><span class="fx-time" id="fxTime">0:00 / 0:10</span><div class="fx-bar"><i id="fxBar"></i></div></div>
+  </div>
+</div>
+
+<footer>
+  <div class="f-top">
+    <div class="f-brand">
+      <div class="footer-logo">Kankana</div>
+      <div class="tag">Venues for meaningful moments</div>
+      <i></i>
+      <p>Extraordinary destinations,<br>timeless celebrations.</p>
+    </div>
+    <div class="footer-col" role="navigation" aria-label="Explore">
+      <h4>Explore</h4>
+      <a href="#venues">Venues</a><a href="#featured">Stays</a><a href="#experiences">Events</a><a href="#journal">Journal</a>
+    </div>
+    <div class="footer-col" role="navigation" aria-label="Studio">
+      <h4>Studio</h4>
+      <a href="studio.html">The Collective</a><a href="#philosophy">Our Philosophy</a><a href="studio.html">Behind the Scenes</a><a href="#enquire">Contact</a>
+    </div>
+    <div class="footer-col" role="navigation" aria-label="Bookings">
+      <h4>Bookings</h4>
+      <a href="book.html">Check Availability</a><a href="my-booking.html">My Booking</a><a href="admin.html">Studio Login</a><a href="#enquire">Enquire</a>
+    </div>
+    <div class="footer-col" role="navigation" aria-label="Follow">
+      <h4>Follow</h4>
+      <a href="#" rel="noopener">Instagram</a><a href="#" rel="noopener">Pinterest</a><a href="#" rel="noopener">YouTube</a><a href="#" rel="noopener">LinkedIn</a>
+    </div>
+  </div>
+  <div class="f-rule"></div>
+  <div class="f-bottom">
+    <div class="copy">&copy; 2026 Kankana. All rights reserved.</div>
+    <div class="f-mark"><i></i><svg viewBox="0 0 40 26" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M20 24 C 17 17, 17 9, 20 2 C 23 9, 23 17, 20 24 Z"/><path d="M20 24 C 14 20, 10 14, 9 7 C 15 10, 19 16, 20 24 Z"/><path d="M20 24 C 26 20, 30 14, 31 7 C 25 10, 21 16, 20 24 Z"/><path d="M20 24 C 12 23, 6 19, 2 14 C 9 14, 16 18, 20 24 Z"/><path d="M20 24 C 28 23, 34 19, 38 14 C 31 14, 24 18, 20 24 Z"/></svg><i></i></div>
+    <div class="f-legal"><a href="#">Privacy Policy</a><span>|</span><a href="#">Terms</a><span>|</span><a href="#">Site by NIRVON</a></div>
+  </div>
+</footer>
+
+<script>
+  /* Intro: starts as soon as the page structure is ready (not after every
+     photo/video has downloaded), holds ~2.6s so the logo animation is enjoyed in full. */
+  const intro = document.getElementById('intro');
+  // Always land on the hero after the intro — stop the browser restoring the
+  // previous scroll position (e.g. the footer) on reload/back.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  const targetHash = location.hash && location.hash.length > 1 ? location.hash : '';
+  const toTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  toTop();
+  window.addEventListener('pageshow', toTop);
+  let introDone = false;
+  const endIntro = () => {
+    if (introDone) return; introDone = true;
+    intro.classList.add('fade-out');
+    document.body.classList.remove('intro-lock');
+    const target = targetHash && document.querySelector(targetHash);
+    if (target) target.scrollIntoView({ behavior: 'instant', block: 'start' }); else toTop();
+    setTimeout(() => { intro.style.display = 'none'; }, 650);
+  };
+  const INTRO_HOLD_MS = 2600; // how long the intro stays on screen
+  const startIntro = () => {
+    // start timing once the logo is ready (max 1.5s wait), so the full animation is seen
+    const logo = intro.querySelector('.intro-logo img');
+    let started = false;
+    const go = () => { if (!started) { started = true; setTimeout(endIntro, INTRO_HOLD_MS); } };
+    if (!logo || logo.complete) go(); else { logo.addEventListener('load', go); logo.addEventListener('error', go); setTimeout(go, 1500); }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startIntro); else startIntro();
+  intro.addEventListener('click', endIntro); // tap to skip
+</script>
+<script src="assets/lenis.min.js"></script>
+<script src="assets/home.js"></script>
+</body>
+</html>

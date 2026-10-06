@@ -1,0 +1,11 @@
+{
+  "name": "kankana-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kankana — Weddings & Beyond: website, bookings, Razorpay payments and studio admin",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "PAYMENTS_MODE=mock node server/server.js"
+  },
+  "engines": { "node": ">=22.13" }
+}

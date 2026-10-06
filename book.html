@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Your Celebration — Kankana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/kankana-app.css">
+<style>
+  .book-layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:40px;align-items:start;}
+  .step{margin-bottom:22px;}
+  .step-h{display:flex;align-items:baseline;gap:14px;margin-bottom:18px;}
+  .step-h b{font-family:'Cinzel',serif;font-weight:400;font-size:12px;color:var(--gold);letter-spacing:.2em;}
+  .step-h h2{font-size:28px;}
+  .venue-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .venue-opt{border:1px solid var(--line);background:#fffdf8;padding:18px 18px 16px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .2s, box-shadow .2s;}
+  .venue-opt:hover{border-color:var(--gold);}
+  .venue-opt.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);}
+  .venue-opt .eyebrow{font-size:9px;margin-bottom:6px;}
+  .venue-opt h3{font-size:21px;line-height:1.2;}
+  .venue-opt p{font-size:13px;line-height:1.55;color:var(--muted);margin-top:6px;}
+  .venue-opt .meta{display:flex;justify-content:space-between;margin-top:12px;font-size:12px;}
+  .date-row{display:flex;gap:18px;align-items:flex-end;margin-top:18px;flex-wrap:wrap;}
+  .date-row .field{min-width:150px;}
+  .date-msg{font-size:14px;padding:12px 14px;margin-top:14px;display:none;}
+  .date-msg.ok{display:block;background:var(--green-bg);color:var(--green);}
+  .date-msg.bad{display:block;background:var(--red-bg);color:var(--red);}
+  .pkg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;}
+  .pkg-opt{border:1px solid var(--line);background:#fffdf8;padding:16px;cursor:pointer;font:inherit;color:inherit;text-align:left;}
+  .pkg-opt.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);}
+  .pkg-opt h4{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:20px;}
+  .pkg-opt .price{font-size:13px;margin:4px 0 8px;color:var(--gold-deep);}
+  .pkg-opt p{font-size:12px;line-height:1.5;color:var(--muted);}
+  .addons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;}
+  .addon{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line-soft);background:#fffdf8;padding:13px 14px;cursor:pointer;font-size:14px;}
+  .addon input{margin-top:3px;accent-color:var(--ink);}
+  .addon small{display:block;color:var(--muted);font-size:12px;margin-top:2px;}
+  .summary{position:sticky;top:90px;}
+  .summary .card{padding:26px;}
+  .sum-event{font-size:14px;line-height:1.7;margin:10px 0 16px;padding-bottom:14px;border-bottom:1px solid var(--line-soft);}
+  .sum-lines{font-size:13px;}
+  .sum-lines div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;}
+  .sum-lines div span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .sum-actions{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+  .sum-actions .btn{width:100%;}
+  .sum-note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:12px;}
+  .missing{font-size:12px;color:var(--red);margin-top:10px;min-height:1em;}
+  /* success */
+  #done{display:none;max-width:720px;margin:0 auto;text-align:center;}
+  #done .seal{width:74px;height:74px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:30px;color:var(--gold);}
+  #done h2{font-size:42px;line-height:1.15;margin-bottom:10px;}
+  #done .bid{font-family:'Cinzel',serif;letter-spacing:.2em;font-size:18px;margin:18px 0 6px;}
+  #done .docs{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px;}
+  @media(max-width:980px){
+    .book-layout{grid-template-columns:1fr;}
+    .summary{position:static;}
+  }
+  @media(max-width:640px){
+    .venue-grid,.addons,.pkg-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="k-nav">
+  <a class="logo" href="index.html">Kankana</a>
+  <div class="links">
+    <a href="index.html#venues" class="hide-m">Venues</a>
+    <a href="book.html" class="on">Book</a>
+    <a href="my-booking.html">My Booking</a>
+  </div>
+</nav>
+
+<header class="k-head">
+  <div class="eyebrow">Plan Your Celebration</div>
+  <h1>Check availability &amp; reserve your dates</h1>
+  <p>Choose a venue and date, shape your celebration, and receive an instant quotation. A <span id="advPctTxt">30</span>% advance confirms your booking.</p>
+</header>
+
+<main class="k-wrap">
+  <div id="loading" class="card" style="text-align:center;padding:60px">Loading availability…</div>
+  <div id="flow" class="book-layout" style="display:none">
+    <div>
+      <!-- STEP 1 -->
+      <section class="card step">
+        <div class="step-h"><b>01</b><h2>Choose a venue</h2></div>
+        <div class="venue-grid" id="venues"></div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="card step">
+        <div class="step-h"><b>02</b><h2>Pick your dates</h2></div>
+        <div id="cal" class="k-cal"></div>
+        <div class="k-legend">
+          <span><i class="free"></i>Available</span><span><i class="sel"></i>Your dates</span>
+          <span><i class="hold"></i>On hold</span><span><i class="booked"></i>Booked</span><span><i class="blocked"></i>Unavailable</span>
+        </div>
+        <div class="date-row">
+          <label class="field"><span>Start date</span><input type="date" id="startDate"></label>
+          <label class="field"><span>Celebration length</span>
+            <select id="days"></select>
+          </label>
+        </div>
+        <div class="date-msg" id="dateMsg"></div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="card step">
+        <div class="step-h"><b>03</b><h2>Shape the celebration</h2></div>
+        <div class="grid2">
+          <label class="field"><span>Guests</span><input type="number" id="guests" min="10" max="1000" value="150"></label>
+          <label class="field"><span>Guest rooms per night</span><input type="number" id="rooms" min="0" max="200" value="0"></label>
+        </div>
+        <div class="pkg-grid" id="packages"></div>
+        <div class="addons" id="addons"></div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="card step">
+        <div class="step-h"><b>04</b><h2>Your details</h2></div>
+        <form id="details" class="grid2" onsubmit="return false;">
+          <label class="field"><span>Full name(s)</span><input id="cName" autocomplete="name" required placeholder="e.g. Ananya &amp; Rohan"></label>
+          <label class="field"><span>Email</span><input id="cEmail" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+          <label class="field"><span>Phone</span><input id="cPhone" type="tel" autocomplete="tel" required placeholder="+91 98xxx xxxxx"></label>
+          <label class="field"><span>City</span><input id="cCity" placeholder="Where are you based?" autocomplete="address-level2"></label>
+          <label class="field"><span>State</span><input id="cState" placeholder="e.g. Karnataka" autocomplete="address-level1"></label>
+          <label class="field"><span>GSTIN <small style="text-transform:none;letter-spacing:0">(optional, for business invoices)</small></span><input id="cGstin" maxlength="15" placeholder="29ABCDE1234F1Z5"></label>
+          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+          <label class="field" style="grid-column:1/-1"><span>Anything we should know?</span><textarea id="cNotes" placeholder="Rituals, themes, dietary needs…"></textarea></label>
+        </form>
+      </section>
+    </div>
+
+    <!-- SUMMARY -->
+    <aside class="summary">
+      <div class="card">
+        <div class="eyebrow">Instant Quotation</div>
+        <div class="sum-event" id="sumEvent"></div>
+        <div class="sum-lines" id="sumLines"></div>
+        <div class="q-totals" id="sumTotals" style="width:100%"></div>
+        <div class="missing" id="missing"></div>
+        <div class="sum-actions">
+          <button class="btn solid" id="payBtn" type="button">Pay advance &amp; confirm</button>
+          <button class="btn" id="holdBtn" type="button">Save quotation · pay later</button>
+        </div>
+        <p class="sum-note">Dates are held for <span id="holdH">72</span> hours on a saved quotation. Payments are processed securely by Razorpay (UPI, cards, netbanking). Balance is due <span id="balDays">30</span> days before your celebration.</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- SUCCESS -->
+  <section id="done">
+    <div class="seal">✦</div>
+    <div class="eyebrow" id="doneEyebrow">Booking Confirmed</div>
+    <h2 id="doneTitle">Your dates are reserved</h2>
+    <p class="muted" id="doneText"></p>
+    <div class="bid" id="doneId"></div>
+    <p class="muted" style="font-size:13px">Keep this booking ID. You'll need it with your email to track your booking.</p>
+    <div class="docs" id="doneDocs"></div>
+  </section>
+</main>
+
+<div class="k-footer">© 2026 Kankana. All rights reserved. <a href="index.html">Home</a><a href="my-booking.html">Track a booking</a></div>
+
+<script src="assets/kankana-pricing.js"></script>
+<script src="assets/kankana-core.js"></script>
+<script src="assets/book.js"></script>
+</body>
+</html>

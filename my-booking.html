@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Booking — Kankana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/kankana-app.css">
+<style>
+  .lookup{max-width:520px;margin:0 auto;}
+  .lookup form{display:grid;gap:16px;}
+  .lookup .err{color:var(--red);font-size:14px;min-height:1.2em;}
+  .bk{display:none;}
+  .bk-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:26px;}
+  .bk-top h2{font-size:38px;line-height:1.1;}
+  .bk-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start;}
+  .kv{display:grid;grid-template-columns:140px 1fr;gap:10px 16px;font-size:14px;margin-top:14px;}
+  .kv dt{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding-top:2px;}
+  .money{font-size:14px;}
+  .money div{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-soft);font-variant-numeric:tabular-nums;}
+  .money .due{font-size:18px;font-weight:500;border:none;padding-top:14px;}
+  .actions{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+  .actions .btn{width:100%;}
+  .docs a{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line-soft);font-size:14px;text-decoration:none;}
+  .docs a:hover{color:var(--gold-deep);}
+  .hold-note{background:var(--amber-bg);color:var(--amber);padding:12px 14px;font-size:13px;margin-top:14px;line-height:1.5;}
+  @media(max-width:900px){.bk-grid{grid-template-columns:1fr;}.kv{grid-template-columns:110px 1fr;}}
+</style>
+</head>
+<body>
+<nav class="k-nav">
+  <a class="logo" href="index.html">Kankana</a>
+  <div class="links">
+    <a href="index.html#venues" class="hide-m">Venues</a>
+    <a href="book.html">Book</a>
+    <a href="my-booking.html" class="on">My Booking</a>
+  </div>
+</nav>
+
+<header class="k-head">
+  <div class="eyebrow">Your Celebration</div>
+  <h1>Track your booking</h1>
+  <p>See your booking status, pay your advance or balance, and download your quotation, invoice and receipts.</p>
+</header>
+
+<main class="k-wrap">
+  <section class="lookup card" id="lookup">
+    <form id="lf">
+      <label class="field"><span>Booking ID</span><input id="lId" placeholder="KNK-1001" required></label>
+      <label class="field"><span>Email used for booking</span><input id="lEmail" type="email" placeholder="you@example.com" required></label>
+      <div class="err" id="lErr"></div>
+      <button class="btn solid" type="submit" id="lBtn">View my booking</button>
+    </form>
+  </section>
+
+  <section class="bk" id="bk"></section>
+</main>
+
+<div class="k-footer">© 2026 Kankana. All rights reserved. <a href="index.html">Home</a><a href="book.html">Book</a></div>
+
+<script src="assets/kankana-pricing.js"></script>
+<script src="assets/kankana-core.js"></script>
+<script src="assets/my-booking.js"></script>
+</body>
+</html>

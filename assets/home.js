@@ -191,12 +191,12 @@
         { n: 'Fountain Deck', t: 'pool', c: 'navy', r: [360, 80, 280, 330], cap: 120, best: 'Orchestra pit · Fountain', pos: 'In front of the stage', ph: F(157) },
         { n: 'Amphitheatre Stage', t: 'stage', c: 'blue', r: [360, 430, 280, 110], cap: 600, best: 'Sangeet · Concerts · Screenings', pos: 'South, facing the tiers', ph: F(145) },
         { n: 'East Tiers', t: 'lawn', c: 'orange', r: [660, 80, 230, 460], cap: 180, best: 'Tiered seating · Audience', pos: 'East of the stage', ph: F(169) }] },
-    { n: '02', name: 'The Colonnade', id: 'colonnade', x: .58, y: .35, tag: 'Pheras · Vows beneath the arches', photo: F(193), outer: [70, 110, 860, 400], view: ['Water court', 'Sunset fields'],
+    { n: '02', name: 'The Colonnade', id: 'colonnade', x: .58, y: .35, tag: 'Pheras · Vows beneath the arches', photo: F(193), outer: [70, 110, 860, 400], view: ['Amphitheatre', 'Sunset fields'],
       zones: [
         { n: 'North Arcade', t: 'lounge', c: 'blue', r: [100, 140, 200, 340], cap: 80, best: 'Lounge · Bar', pos: 'North wing', ph: F(205) },
         { n: 'Mandap Hall', t: 'ceremony', c: 'yellow', r: [320, 140, 360, 340], cap: 500, best: 'Pheras · Vows', pos: 'Central hall', ph: F(193) },
         { n: 'South Arcade', t: 'lounge', c: 'green', r: [700, 140, 200, 340], cap: 80, best: 'Family lounge', pos: 'South wing', ph: F(181) }] },
-    { n: '03', name: 'Garden Pavilions', id: 'garden-pavilions', x: .22, y: .50, tag: 'Mehndi · Haldi under the banyan', photo: F(109), outer: [90, 70, 820, 480], view: ['Orchard', 'Water court'],
+    { n: '03', name: 'Garden Pavilions', id: 'garden-pavilions', x: .22, y: .50, tag: 'Mehndi · Haldi under the banyan', photo: F(109), outer: [90, 70, 820, 480], view: ['Orchard', 'Amphitheatre'],
       zones: [
         { n: 'Mehndi Garden', t: 'lawn', c: 'green', r: [120, 100, 400, 250], cap: 250, best: 'Mehndi · Haldi', pos: 'Under the banyan', ph: F(109) },
         { n: 'Haldi Lawn', t: 'dining', c: 'yellow', r: [120, 370, 400, 150], cap: 120, best: 'Haldi brunch', pos: 'South lawn', ph: F(121) },
@@ -209,14 +209,11 @@
       zones: [
         { n: 'Reception Hall', id: 'reception-hall', t: 'stage', ty: 'Hall', c: 'yellow', r: [90, 120, 480, 380], cap: 800, best: 'Receptions · Sangeet', pos: 'West wing', ph: F(169) },
         { n: 'Dining Hall', id: 'dining-hall', t: 'dining', ty: 'Hall', c: 'green', r: [590, 120, 320, 380], cap: 300, best: 'Wedding feasts · Buffets', pos: 'Beside the reception hall', ph: F(121) }] },
-    { n: '06', name: 'The Water Court', id: 'water-court', x: .82, y: .46, tag: 'Sangeet · Reception by still water', photo: F(145), outer: [120, 90, 760, 440], view: ['Colonnade', 'Sunset terrace'],
-      zones: [
-        { n: 'The Water Court', t: 'dining', ty: 'Event venue', c: 'orange', r: [150, 120, 700, 380], cap: 300, best: 'Sangeet dinner · Reception', pos: 'East wing', ph: F(145) }] },
-    { n: '07', name: 'Villas & Rooms', id: 'villa', x: .62, y: .17, tag: 'Six private villas · Twenty guest rooms', photo: U(SUITE), outer: [50, 110, 900, 400], view: ['Courtyard', 'Desert view'],
+    { n: '06', name: 'Villas & Rooms', id: 'villa', x: .62, y: .17, tag: 'Six private villas · Twenty guest rooms', photo: U(SUITE), outer: [50, 110, 900, 400], view: ['Courtyard', 'Desert view'],
       zones: [
         { n: 'Private Villas', id: 'villa', t: 'suite', ty: '6 villas', c: 'yellow', r: [80, 140, 400, 340], cap: 4, unit: 'per villa', best: 'The couple · Parents · Close family', pos: 'Upper floor & garden wing', ph: U(BED) },
         { n: 'Guest Rooms', id: 'room', t: 'suite', ty: '20 rooms', c: 'navy', r: [500, 140, 420, 340], cap: 2, unit: 'per room', best: 'Wedding guests · Friends', pos: 'Around the courtyard', ph: U(LOUNGE) }] },
-    { n: '08', name: 'Café & Courts', id: 'cafe', x: .18, y: .14, tag: 'The café · Turf · Pickleball', photo: F(85), outer: [60, 90, 880, 440], view: ['Orchard', 'Palace'],
+    { n: '07', name: 'Café & Courts', id: 'cafe', x: .18, y: .14, tag: 'The café · Turf · Pickleball', photo: F(85), outer: [60, 90, 880, 440], view: ['Orchard', 'Palace'],
       zones: [
         { n: 'The Café', id: 'cafe', t: 'dining', ty: 'Café', c: 'orange', r: [90, 120, 260, 380], cap: 40, unit: 'seats', best: 'Coffee · Breakfast · Long lunches', pos: 'By the orchard', ph: F(97) },
         { n: 'Turf', id: 'turf', t: 'lawn', ty: 'Sport', c: 'green', r: [370, 120, 340, 380], cap: 22, unit: 'players', best: 'Football · Cricket nets · Games', pos: 'Beyond the garden wall', ph: F(73) },
@@ -823,7 +820,7 @@ void main(){
 
   /* ================================================================ film player */
   const fxm = $('#filmModal'), fxFilm = new Film($('#fxCanvas')), fxBar = $('#fxBar'), fxTime = $('#fxTime'), fxPlay = $('#fxPlay'), fxCap = $('#fxCap');
-  const CAPS = [[0, 'The Arrival'], [56, 'The Gate'], [100, 'The Water Court'], [170, 'The Colonnade'], [212, 'The Terrace']];
+  const CAPS = [[0, 'The Arrival'], [56, 'The Gate'], [100, 'The Amphitheatre'], [170, 'The Colonnade'], [212, 'The Terrace']];
   let fxOn = false, fxF = 0, fxT = 0;
   const fmt = s => `0:${String(Math.floor(s)).padStart(2, '0')}`;
   function fxStep(t) {

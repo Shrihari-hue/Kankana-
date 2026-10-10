@@ -10,7 +10,6 @@ const P = require('../../assets/kankana-pricing.js');
    ids must be unique across venues, stays and slots (they key availability). */
 const DEFAULT_CATALOG = {
   venues: [
-    { id: 'water-court', name: 'The Water Court', region: 'Event venue', capacity: 300, perDay: 300000, blurb: 'An open courtyard around still water — sangeet nights and receptions.', active: true },
     { id: 'colonnade', name: 'The Colonnade', region: 'Event venue', capacity: 500, perDay: 380000, blurb: 'Pheras beneath carved arches, with the fields beyond.', active: true },
     { id: 'garden-pavilions', name: 'The Garden Pavilions', region: 'Event venue', capacity: 250, perDay: 220000, blurb: 'Shaded lawns for mehndi, haldi and long lunches.', active: true },
     { id: 'sunset-terrace', name: 'The Sunset Terrace', region: 'Event venue', capacity: 150, perDay: 180000, blurb: 'West-facing terrace for sundowners and intimate dinners.', active: true },
@@ -176,6 +175,14 @@ class Store {
       }));
       const st = this.getKV('settings');
       if (st && st.roomRate === 18000) this.setKV('settings', Object.assign({}, st, { roomRate: 0 }));
+    }
+    // There is no Water Court at the estate: drop it (or hide it if bookings already use it).
+    const cat2 = this.getKV('catalog');
+    if (cat2 && (cat2.venues || []).some(v => v.id === 'water-court')) {
+      const used = this.db.prepare("SELECT 1 FROM bookings WHERE venue_id='water-court' LIMIT 1").get();
+      cat2.venues = used ? cat2.venues.map(v => v.id === 'water-court' ? Object.assign({}, v, { active: false }) : v)
+                         : cat2.venues.filter(v => v.id !== 'water-court');
+      this.setKV('catalog', cat2);
     }
     // Brand renamed from "Weddings & Beyond" to "Weddings & Resorts".
     const st2 = this.getKV('settings');

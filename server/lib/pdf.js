@@ -131,7 +131,7 @@ function header(d, s, title, metaLines) {
   d.rect(22, 22, 551.28, 797.89, null, [0.85, 0.74, 0.55]);
   d.image(L, 40, 50, 62);
   d.text('KANKANA', L + 64, 68, { font: 'S', size: 22, spacing: 5 });
-  d.text('WEDDINGS & BEYOND', L + 65, 84, { font: 'R', size: 7, color: GOLD, spacing: 2.2 });
+  d.text('WEDDINGS & RESORTS', L + 65, 84, { font: 'R', size: 7, color: GOLD, spacing: 2.2 });
   let y = 52;
   [C.legalName || C.name, C.address, `${C.email} · ${C.phone}`, C.gstin ? `GSTIN ${C.gstin}` : ''].filter(Boolean).forEach(t => { d.text(t, R, y, { size: 8.5, color: MUTED, align: 'right' }); y += 12; });
   d.line(L, 112, R, 112, GOLD, 0.8);

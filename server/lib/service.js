@@ -243,7 +243,7 @@ function createService(store, opts) {
     return `<!doctype html><html><body style="margin:0;background:#f6ecd8;font-family:Helvetica,Arial,sans-serif;color:#26080e">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6ecd8;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fffdf8;border:1px solid #e6d7b8">
-<tr><td style="background:#26080e;padding:26px 30px;text-align:center"><div style="font-family:Georgia,serif;font-size:24px;letter-spacing:8px;color:#f6ecd8">KANKANA</div><div style="font-size:10px;letter-spacing:4px;color:#c9a35c;margin-top:6px">WEDDINGS &amp; BEYOND</div></td></tr>
+<tr><td style="background:#26080e;padding:26px 30px;text-align:center"><div style="font-family:Georgia,serif;font-size:24px;letter-spacing:8px;color:#f6ecd8">KANKANA</div><div style="font-size:10px;letter-spacing:4px;color:#c9a35c;margin-top:6px">WEDDINGS &amp; RESORTS</div></td></tr>
 <tr><td style="padding:30px">
 <div style="font-family:Georgia,serif;font-size:24px;line-height:1.3;margin-bottom:14px">${esc(heading)}</div>
 ${paras.map(p => `<p style="font-size:15px;line-height:1.7;margin:0 0 14px;color:#3d2429">${p}</p>`).join('')}

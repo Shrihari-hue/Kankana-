@@ -56,7 +56,7 @@ const DEFAULT_SETTINGS = {
   slotHoldMinutes: 30,
   balanceDueDaysBefore: 30,
   company: {
-    name: 'Kankana — Weddings & Beyond',
+    name: 'Kankana — Weddings & Resorts',
     legalName: 'Kankana Weddings',
     address: 'Bengaluru, Karnataka, India',
     email: 'hello@kankana.in',
@@ -176,6 +176,12 @@ class Store {
       }));
       const st = this.getKV('settings');
       if (st && st.roomRate === 18000) this.setKV('settings', Object.assign({}, st, { roomRate: 0 }));
+    }
+    // Brand renamed from "Weddings & Beyond" to "Weddings & Resorts".
+    const st2 = this.getKV('settings');
+    if (st2 && st2.company && /Weddings & Beyond/.test(st2.company.name || '')) {
+      st2.company.name = st2.company.name.replace('Weddings & Beyond', 'Weddings & Resorts');
+      this.setKV('settings', st2);
     }
   }
 

@@ -185,12 +185,12 @@
   const SUITE = '1613553474179-e1eda3ea5734', BED = '1718894071528-1108a094cc78', LOUNGE = '1668277157922-ecd8330ea809';
   /* The estate's real facilities. Zone layouts are illustrative; capacities match the booking catalog defaults. */
   const SPACES = [
-    { n: '01', name: 'The Water Court', id: 'water-court', x: .50, y: .52, tag: 'Sangeet · Reception around the pool', photo: F(133), outer: [80, 50, 840, 520], view: ['West arcade', 'East arcade'],
+    { n: '01', name: 'The Amphitheatre', id: 'amphitheatre', x: .50, y: .52, tag: 'Performances · Sangeet under the open sky', photo: F(133), outer: [80, 50, 840, 520], view: ['West arcade', 'East arcade'],
       zones: [
-        { n: 'West Lawn', t: 'dining', c: 'green', r: [110, 80, 230, 460], cap: 180, best: 'Sangeet dinner · Reception', pos: 'West of the pool', ph: F(121) },
-        { n: 'Fountain Deck', t: 'pool', c: 'navy', r: [360, 80, 280, 330], cap: 120, best: 'Cocktails · First look', pos: 'Centre', ph: F(157) },
-        { n: 'Court Stage', t: 'stage', c: 'blue', r: [360, 430, 280, 110], cap: 300, best: 'Sangeet · Performances', pos: 'South, facing the pool', ph: F(145) },
-        { n: 'East Lawn', t: 'dining', c: 'orange', r: [660, 80, 230, 460], cap: 180, best: 'Reception · Buffet', pos: 'East of the pool', ph: F(169) }] },
+        { n: 'West Tiers', t: 'lawn', c: 'green', r: [110, 80, 230, 460], cap: 180, best: 'Tiered seating · Audience', pos: 'West of the stage', ph: F(121) },
+        { n: 'Fountain Deck', t: 'pool', c: 'navy', r: [360, 80, 280, 330], cap: 120, best: 'Orchestra pit · Fountain', pos: 'In front of the stage', ph: F(157) },
+        { n: 'Amphitheatre Stage', t: 'stage', c: 'blue', r: [360, 430, 280, 110], cap: 600, best: 'Sangeet · Concerts · Screenings', pos: 'South, facing the tiers', ph: F(145) },
+        { n: 'East Tiers', t: 'lawn', c: 'orange', r: [660, 80, 230, 460], cap: 180, best: 'Tiered seating · Audience', pos: 'East of the stage', ph: F(169) }] },
     { n: '02', name: 'The Colonnade', id: 'colonnade', x: .58, y: .35, tag: 'Pheras · Vows beneath the arches', photo: F(193), outer: [70, 110, 860, 400], view: ['Water court', 'Sunset fields'],
       zones: [
         { n: 'North Arcade', t: 'lounge', c: 'blue', r: [100, 140, 200, 340], cap: 80, best: 'Lounge · Bar', pos: 'North wing', ph: F(205) },
@@ -209,9 +209,9 @@
       zones: [
         { n: 'Reception Hall', id: 'reception-hall', t: 'stage', ty: 'Hall', c: 'yellow', r: [90, 120, 480, 380], cap: 800, best: 'Receptions · Sangeet', pos: 'West wing', ph: F(169) },
         { n: 'Dining Hall', id: 'dining-hall', t: 'dining', ty: 'Hall', c: 'green', r: [590, 120, 320, 380], cap: 300, best: 'Wedding feasts · Buffets', pos: 'Beside the reception hall', ph: F(121) }] },
-    { n: '06', name: 'The Amphitheatre', id: 'amphitheatre', x: .82, y: .46, tag: 'Performances under the open sky', photo: F(145), outer: [120, 90, 760, 440], view: ['Colonnade', 'Sunset terrace'],
+    { n: '06', name: 'The Water Court', id: 'water-court', x: .82, y: .46, tag: 'Sangeet · Reception by still water', photo: F(145), outer: [120, 90, 760, 440], view: ['Colonnade', 'Sunset terrace'],
       zones: [
-        { n: 'Amphitheatre', t: 'ceremony', ty: 'Open-air', c: 'orange', r: [150, 120, 700, 380], cap: 600, best: 'Sangeet · Concerts · Screenings', pos: 'East of the water court', ph: F(145) }] },
+        { n: 'The Water Court', t: 'dining', ty: 'Event venue', c: 'orange', r: [150, 120, 700, 380], cap: 300, best: 'Sangeet dinner · Reception', pos: 'East wing', ph: F(145) }] },
     { n: '07', name: 'Villas & Rooms', id: 'villa', x: .62, y: .17, tag: 'Six private villas · Twenty guest rooms', photo: U(SUITE), outer: [50, 110, 900, 400], view: ['Courtyard', 'Desert view'],
       zones: [
         { n: 'Private Villas', id: 'villa', t: 'suite', ty: '6 villas', c: 'yellow', r: [80, 140, 400, 340], cap: 4, unit: 'per villa', best: 'The couple · Parents · Close family', pos: 'Upper floor & garden wing', ph: U(BED) },

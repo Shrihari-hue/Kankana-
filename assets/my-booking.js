@@ -17,7 +17,8 @@
     const paid = K.paidAmount(b), due = K.balanceDue(b);
     const flow = ['quoted', 'confirmed', 'planning', 'paid', 'completed'];
     const idx = b.status === 'enquiry' ? -1 : flow.indexOf(b.status);
-    const stepLabels = ['Quotation', 'Advance paid', 'Planning', 'Fully paid', 'Celebrated'];
+    const kind = U.kindOf(b), ds = U.describe(b), fullPay = b.quote.advance >= b.quote.total;
+    const stepLabels = kind === 'event' ? ['Quotation', 'Advance paid', 'Planning', 'Fully paid', 'Celebrated'] : kind === 'stay' ? ['Quotation', 'Advance paid', 'Confirmed', 'Fully paid', 'Stayed'] : ['Reserved', 'Paid', 'Confirmed', 'Confirmed', 'Visited'];
     const needsAdvance = b.due && b.due.type === 'advance';
     const holdExpired = b.status === 'quoted' && b.holdUntil && b.holdUntil < Date.now();
 
@@ -27,7 +28,7 @@
         <div>
           <div class="eyebrow">Booking ${U.esc(b.id)}</div>
           <h2>${U.esc(b.customer.name)}</h2>
-          <div class="muted" style="margin-top:6px">${U.esc(b.venueName)} · ${U.range(b)}</div>
+          <div class="muted" style="margin-top:6px">${U.esc(b.venueName)} · ${U.esc(ds.when)}</div>
         </div>
         <span class="pill ${st.tone}">${st.label}</span>
       </div>
@@ -35,13 +36,13 @@
       <div class="bk-grid">
         <div>
           <div class="card">
-            <h3>Celebration details</h3>
+            <h3>${ds.label} details</h3>
             <dl class="kv">
-              <dt>Venue</dt><dd>${U.esc(b.venueName)}</dd>
-              <dt>Dates</dt><dd>${U.range(b)}${b.days > 1 ? ` (${b.days} days)` : ''}</dd>
-              <dt>Guests</dt><dd>${b.guests}</dd>
-              <dt>Package</dt><dd>${U.esc(b.packageName || '—')}</dd>
-              <dt>Guest rooms</dt><dd>${b.rooms ? b.rooms + ' per night' : '—'}</dd>
+              <dt>${ds.resourceLabel}</dt><dd>${U.esc(b.venueName)}</dd>
+              <dt>When</dt><dd>${U.esc(ds.when)}</dd>
+              <dt>Guests</dt><dd>${U.esc(ds.people)}</dd>
+              ${kind === 'event' ? `<dt>Package</dt><dd>${U.esc(b.packageName || '—')}</dd>
+              <dt>Stay on the estate</dt><dd>${U.esc(ds.extras.filter(x => / per night$/.test(x)).join(', ') || '—')}</dd>` : ''}
               ${b.notes ? `<dt>Notes</dt><dd>${U.esc(b.notes)}</dd>` : ''}
             </dl>
           </div>
@@ -54,7 +55,7 @@
             <div class="q-totals">
               ${b.quote.discount ? `<div><span>Discount</span><span>− ${U.inr(b.quote.discount)}</span></div>` : ''}
               <div><span>Subtotal</span><span>${U.inr(b.quote.subtotal)}</span></div>
-              <div><span>GST (${b.quote.gstPct}%)</span><span>${U.inr(b.quote.gst)}</span></div>
+              ${(b.quote.gstBreakdown && b.quote.gstBreakdown.length ? b.quote.gstBreakdown : [{ pct: b.quote.gstPct, gst: b.quote.gst }]).map(g => `<div><span>GST (${g.pct}%)</span><span>${U.inr(g.gst)}</span></div>`).join('')}
               <div class="grand"><span>Total</span><span>${U.inr(b.quote.total)}</span></div>
             </div>
           </div>
@@ -71,11 +72,11 @@
             <div class="money" style="margin-top:10px">
               <div><span>Total</span><span>${U.inr(b.quote.total)}</span></div>
               <div><span>Paid</span><span>${U.inr(paid)}</span></div>
-              <div class="due"><span>${needsAdvance ? `Advance due (${b.quote.advancePct}%)` : 'Balance due'}</span><span>${U.inr(b.due ? b.due.amount : due)}</span></div>
+              <div class="due"><span>${needsAdvance ? (fullPay ? 'Amount due' : `Advance due (${b.quote.advancePct}%)`) : 'Balance due'}</span><span>${U.inr(b.due ? b.due.amount : due)}</span></div>
             </div>
-            ${b.status === 'quoted' ? `<div class="hold-note">${holdExpired ? 'Your date hold has expired. You can still pay the advance if the dates are free — we will check availability first.' : `Dates held until ${U.fmtDateTime(b.holdUntil)}.`}</div>` : ''}
+            ${b.status === 'quoted' ? `<div class="hold-note">${holdExpired ? `Your hold has expired. You can still pay if the ${kind === 'slot' ? 'time is' : 'dates are'} free — we will check availability first.` : `${kind === 'slot' ? 'Reservation' : 'Dates'} held until ${U.fmtDateTime(b.holdUntil)}.`}</div>` : ''}
             <div class="actions">
-              ${b.due ? `<button class="btn solid" id="payNow">Pay ${U.inr(b.due.amount)} ${b.due.type === 'advance' ? 'advance' : 'balance'}</button>` : ''}
+              ${b.due ? `<button class="btn solid" id="payNow">Pay ${U.inr(b.due.amount)} ${b.due.type === 'advance' ? (fullPay ? '& confirm' : 'advance') : 'balance'}</button>` : ''}
             </div>
             <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.6">Secure payments by Razorpay — UPI, cards and netbanking.</p>
           </div>

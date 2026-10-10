@@ -148,15 +148,14 @@ function header(d, s, title, metaLines) {
 }
 
 function parties(d, b, venue, pkg) {
-  const c = b.customer, y0 = d.y;
+  const c = b.customer, y0 = d.y, ds = P.describe(b);
   d.text('BILLED TO', L, y0, { size: 7.5, color: GOLD, spacing: 1.6 });
-  d.text('CELEBRATION', 310, y0, { size: 7.5, color: GOLD, spacing: 1.6 });
-  const end = P.addDays(b.startDate, b.days - 1);
-  const when = b.days > 1 ? `${fmtDate(b.startDate)} – ${fmtDate(end)}` : fmtDate(b.startDate);
+  d.text(ds.label.toUpperCase(), 310, y0, { size: 7.5, color: GOLD, spacing: 1.6 });
   const left = [[c.name, 'B'], [c.email], [c.phone], [c.city], [c.gstin ? 'GSTIN ' + c.gstin : '']].filter(x => x[0]);
-  const right = [[venue ? `${venue.name}, ${venue.region}` : b.venueId, 'B'], [`${when} · ${b.days} day${b.days > 1 ? 's' : ''}`], [`${b.guests} guests${pkg ? ' · ' + pkg.name + ' package' : ''}`], [`Booking ref ${b.id}`]];
+  const title = venue ? (ds.kind === 'event' && venue.region ? `${venue.name} · ${venue.region}` : venue.name) : (b.venueName || b.venueId);
+  const right = [[title, 'B'], [ds.when], [[ds.people].concat(ds.extras).join(' · ')], [`Booking ref ${b.id}`]];
   let y = y0 + 16; left.forEach(([t, f]) => { d.text(t, L, y, { font: f || 'R', size: 9.5 }); y += 13; });
-  let y2 = y0 + 16; right.forEach(([t, f]) => { d.text(t, 310, y2, { font: f || 'R', size: 9.5 }); y2 += 13; });
+  let y2 = y0 + 16; right.forEach(([t, f]) => d.wrap(t, R - 310, f === 'B' ? 'B' : 'R', 9.5).forEach(line => { d.text(line, 310, y2, { font: f || 'R', size: 9.5 }); y2 += 13; }));
   d.y = Math.max(y, y2) + 14;
 }
 
@@ -202,6 +201,20 @@ function totals(d, rows) {
   d.y += 6;
 }
 
+/** GST rows: one line per rate; split into CGST + SGST unless the client is in another state. */
+function gstRows(q, interState, split) {
+  const groups = q.gstBreakdown && q.gstBreakdown.length ? q.gstBreakdown : [{ pct: q.gstPct, taxable: q.subtotal, gst: q.gst }];
+  const many = groups.length > 1, rows = [];
+  groups.forEach(g => {
+    const on = many ? ` on ${rs(g.taxable)}` : '';
+    if (!split) rows.push({ label: `GST @ ${g.pct}%${on}`, value: rs(g.gst) });
+    else if (interState) rows.push({ label: `IGST @ ${g.pct}%${on}`, value: rs(g.gst) });
+    else rows.push({ label: `CGST @ ${g.pct / 2}%${on}`, value: rs(g.gst / 2) }, { label: `SGST @ ${g.pct / 2}%${on}`, value: rs(g.gst - Math.round(g.gst / 2)) });
+  });
+  return rows;
+}
+const balanceText = (b, s) => P.kindOf(b) === 'stay' ? `Due at check-in on ${fmtDate(b.startDate)}.` : P.kindOf(b) === 'slot' ? 'Due before your reservation.' : `Due by ${fmtDate(P.addDays(b.startDate, -(s.balanceDueDaysBefore || 30)))}.`;
+
 function section(d, title, lines, x, w) {
   d.text(title.toUpperCase(), x, d.y, { size: 7.5, color: GOLD, spacing: 1.6 });
   let y = d.y + 14;
@@ -231,11 +244,12 @@ function quotation(b, ctx) {
   itemsTable(d, q);
   const rows = [];
   if (q.discount) rows.push({ label: 'Gross', value: rs(q.gross) }, { label: 'Discount', value: '- ' + rs(q.discount) });
-  rows.push({ label: 'Taxable value', value: rs(q.subtotal) }, { label: `GST @ ${q.gstPct}%`, value: rs(q.gst) },
-    { rule: true, label: 'Total', value: rs(q.total), big: true }, { band: true, label: `Advance to confirm (${q.advancePct}%)`, value: rs(q.advance) });
+  rows.push({ label: 'Taxable value', value: rs(q.subtotal) }, ...gstRows(q, false, false),
+    { rule: true, label: 'Total', value: rs(q.total), big: true }, { band: true, label: q.advance >= q.total ? 'Payable to confirm' : `Advance to confirm (${q.advancePct}%)`, value: rs(q.advance) });
   totals(d, rows);
   d.ensure(120);
-  const y1 = section(d, 'Terms', (s.terms || []).map((t, i) => `${i + 1}. ${t}`), L, 270);
+  const terms = P.kindOf(b) === 'stay' ? s.stayTerms : P.kindOf(b) === 'slot' ? s.slotTerms : s.terms;
+  const y1 = section(d, 'Terms', (terms || []).map((t, i) => `${i + 1}. ${t}`), L, 270);
   const y2 = section(d, 'How to pay', [`Pay securely online (UPI, cards, netbanking) at ${ctx.siteUrl}/my-booking.html using booking ID ${b.id}.`].concat(b.notes ? ['', 'Notes: ' + b.notes] : []), 340, R - 340);
   d.y = Math.max(y1, y2) + 6;
   signature(d, s);
@@ -247,15 +261,14 @@ function invoice(b, ctx) {
   const paid = b.payments.reduce((t, p) => t + p.amount, 0), due = Math.max(0, q.total - paid);
   const first = b.payments[0];
   d.title = `Tax Invoice ${b.invoiceNo}`;
-  header(d, s, 'TAX INVOICE', [b.invoiceNo, `Date ${fmtTs(first ? first.at : Date.now())}`, `Against quotation ${b.quoteNo}`, `SAC ${s.company.sac || '998596'} · Place of supply: ${b.customer.state || s.company.state || 'Karnataka'}`]);
+  header(d, s, 'TAX INVOICE', [b.invoiceNo, `Date ${fmtTs(first ? first.at : Date.now())}`, `Against quotation ${b.quoteNo}`, `SAC ${(ctx.venue && ctx.venue.sac) || s.company.sac || '998596'} · Place of supply: ${b.customer.state || s.company.state || 'Karnataka'}`]);
   parties(d, b, ctx.venue, ctx.pkg);
   itemsTable(d, q);
   const interState = b.customer.state && s.company.state && b.customer.state.toLowerCase() !== s.company.state.toLowerCase();
   const rows = [];
   if (q.discount) rows.push({ label: 'Gross', value: rs(q.gross) }, { label: 'Discount', value: '- ' + rs(q.discount) });
   rows.push({ label: 'Taxable value', value: rs(q.subtotal) });
-  if (interState) rows.push({ label: `IGST @ ${q.gstPct}%`, value: rs(q.gst) });
-  else rows.push({ label: `CGST @ ${q.gstPct / 2}%`, value: rs(q.gst / 2) }, { label: `SGST @ ${q.gstPct / 2}%`, value: rs(q.gst - Math.round(q.gst / 2)) });
+  rows.push(...gstRows(q, interState, true));
   rows.push({ rule: true, label: 'Invoice total', value: rs(q.total), big: true }, { label: 'Amount received', value: rs(paid) }, { band: true, label: 'Balance due', value: rs(due) });
   totals(d, rows);
   d.ensure(90);
@@ -264,7 +277,7 @@ function invoice(b, ctx) {
   d.y = y0;
   let y2;
   if (due === 0) { stamp(d, 'PAID IN FULL', 360, y0 + 16); y2 = y0 + 30; }
-  else y2 = section(d, 'Balance', [`Due by ${fmtDate(P.addDays(b.startDate, -(s.balanceDueDaysBefore || 30)))}. Pay online at ${ctx.siteUrl}/my-booking.html.`], 340, R - 340);
+  else y2 = section(d, 'Balance', [`${balanceText(b, s)} Pay online at ${ctx.siteUrl}/my-booking.html.`], 340, R - 340);
   d.y = Math.max(y1, y2) + 6;
   signature(d, s);
   return d.build();
@@ -280,10 +293,10 @@ function receipt(b, pay, ctx) {
   d.text(rs(pay.amount), 297.64, d.y + 36, { font: 'S', size: 34, align: 'center' });
   stamp(d, 'RECEIVED', 250, d.y + 70);
   d.y += 110;
-  const end = P.addDays(b.startDate, b.days - 1);
+  const ds = P.describe(b);
   const rows = [
     ['Received from', b.customer.name],
-    ['Towards', `${pay.type === 'balance' ? 'Balance' : 'Advance'} payment for booking ${b.id} — ${ctx.venue ? ctx.venue.name : ''}, ${b.days > 1 ? fmtDate(b.startDate) + ' – ' + fmtDate(end) : fmtDate(b.startDate)}`],
+    ['Towards', `${pay.type === 'balance' ? 'Balance' : pay.amount >= b.quote.total ? 'Full' : 'Advance'} payment for booking ${b.id} — ${b.venueName || (ctx.venue ? ctx.venue.name : '')}, ${ds.when}`],
     ['Method', pay.method], ['Transaction ref', pay.ref || '—'], ['Tax invoice', b.invoiceNo || '—'],
     ['Booking total', rs(b.quote.total)], ['Paid to date', rs(paid)], ['Balance due', rs(due)]
   ];
@@ -296,7 +309,7 @@ function receipt(b, pay, ctx) {
     d.y += 10 + lines.length * 12;
   });
   d.y += 26;
-  d.text('Thank you for trusting Kankana with your celebration. Please keep this receipt for your records.', L, d.y, { size: 9, color: MUTED });
+  d.text(`Thank you for choosing Kankana${P.kindOf(b) === 'event' ? ' for your celebration' : ''}. Please keep this receipt for your records.`, L, d.y, { size: 9, color: MUTED });
   d.y += 20;
   signature(d, s);
   return d.build();

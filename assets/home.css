@@ -410,6 +410,7 @@ body.ui-hide .knav,body.ui-hide .krail{opacity:0;pointer-events:none}
 .pn-pin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:6px}
 .pn-pin b{font-weight:400;font-size:9px;letter-spacing:.26em;text-transform:uppercase;background:#fff;color:var(--ink);padding:6px 10px;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.2)}
 .pn-pin i{display:block;width:1px;height:18px;background:#fff}
+.pn-legend{display:none}
 .pn-pin s{display:block;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 5px rgba(255,255,255,.3);margin-top:-4px}
 .pn-cap{margin-top:30px;opacity:.55}
 
@@ -569,7 +570,11 @@ body.ui-hide .knav,body.ui-hide .krail{opacity:0;pointer-events:none}
   .rc-rule{gap:20px}
   #plan{padding:120px 22px}
   .pn-card{width:100%}
-  .pn-pin b{font-size:7px;padding:4px 6px;letter-spacing:.18em}
+  .pn-pin b{display:none}
+  .pn-pin i{height:0}
+  .pn-pin s{width:18px;height:18px;margin:0;box-shadow:0 0 0 4px rgba(255,255,255,.3);display:grid;place-items:center;text-decoration:none}
+  .pn-pin s::after{content:attr(data-n);font:500 10px/1 Jost,sans-serif;color:var(--ink)}
+  .pn-legend{text-align:left;display:grid!important;grid-template-columns:1fr 1fr;gap:8px 18px;margin:22px auto 0;padding:0 4px 0 22px;max-width:520px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.8}
   .cp-word{top:26vh;font-size:16vw}
   .cp-end .mark{right:20px;bottom:24px;width:60px}
   .ct-strip .r{right:20px}

@@ -25,30 +25,64 @@ function createService(store, opts) {
     if (!customer.name) throw bad('Please enter your name.');
     if (!EMAIL_RE.test(customer.email)) throw bad('Please enter a valid email address.');
     if (!/^[+0-9 ()-]{8,20}$/.test(customer.phone)) throw bad('Please enter a valid phone number.');
-    const venue = cat.venues.find(v => v.id === input.venueId);
-    if (!venue) throw bad('Please choose a venue.');
-    const pkg = cat.packages.find(p => p.id === input.packageId);
-    if (!pkg) throw bad('Please choose a package.');
-    const days = Math.round(+input.days);
-    if (!(days >= 1 && days <= (s.maxDays || 5))) throw bad(`Celebrations can be 1–${s.maxDays || 5} days.`);
-    const guests = Math.round(+input.guests);
-    if (!(guests >= 1 && guests <= 5000)) throw bad('Please enter the number of guests.');
-    if (!admin && guests > venue.capacity) throw bad(`${venue.name} hosts up to ${venue.capacity} guests.`);
-    const rooms = Math.max(0, Math.min(1000, Math.round(+input.rooms || 0)));
-    const addons = [...new Set((input.addons || []).filter(id => cat.addons.some(a => a.id === id)))];
+    const kind = P.kindOf(input);
     const startDate = String(input.startDate || '');
     if (!P.isISODate(startDate)) throw bad('Please choose your dates.');
     if (startDate < P.todayIST()) throw bad('Please choose a future date.');
-    if (requireFree && !store.isRangeFree(venue.id, startDate, days, ignoreId)) throw new HttpError(409, 'Sorry — those dates are no longer available at this venue. Please choose other dates.');
-    const sel = {
-      customer, venueId: venue.id, packageId: pkg.id, startDate, days, guests, rooms, addons,
-      notes: clean(input.notes, 1000),
+    const int = (v, lo, hi) => Math.round(+v) >= lo && Math.round(+v) <= hi ? Math.round(+v) : NaN;
+    const common = {
+      customer, kind, startDate, notes: clean(input.notes, 1000),
       customLines: admin ? (input.customLines || []).slice(0, 30).map(l => ({ desc: clean(l.desc, 200), qty: Math.round(+l.qty) || 0, rate: Math.round(+l.rate) || 0, unit: clean(l.unit || 'lot', 20) })).filter(l => l.desc && l.qty > 0 && l.rate > 0) : [],
       discount: admin ? Math.max(0, Math.round(+input.discount || 0)) : 0
     };
+    let sel;
+    if (kind === 'event') {
+      const venue = cat.venues.find(v => v.id === input.venueId);
+      if (!venue) throw bad('Please choose a venue.');
+      const pkg = cat.packages.find(p => p.id === input.packageId);
+      if (!pkg) throw bad('Please choose a package.');
+      const days = int(input.days, 1, s.maxDays || 5);
+      if (!days) throw bad(`Celebrations can be 1–${s.maxDays || 5} days.`);
+      const guests = int(input.guests, 1, 5000);
+      if (!guests) throw bad('Please enter the number of guests.');
+      if (!admin && guests > venue.capacity) throw bad(`${venue.name} hosts up to ${venue.capacity} guests.`);
+      const accommodation = (Array.isArray(input.accommodation) ? input.accommodation : [])
+        .map(a => { const st = (cat.stays || []).find(x => x.id === a.id); const n = st ? Math.max(0, Math.min(st.units, Math.round(+a.units || 0))) : 0; return st && n ? { id: st.id, name: st.name, unitWord: st.unitWord || 'unit', units: n } : null; })
+        .filter(Boolean);
+      const addons = [...new Set((input.addons || []).filter(id => cat.addons.some(a => a.id === id)))];
+      const rooms = admin ? Math.max(0, Math.min(1000, Math.round(+input.rooms || 0))) : 0;
+      sel = Object.assign(common, { venueId: venue.id, venueName: venue.name, packageId: pkg.id, packageName: pkg.name, days, guests, addons, accommodation, rooms });
+    } else if (kind === 'stay') {
+      const st = (cat.stays || []).find(x => x.id === input.venueId);
+      if (!st) throw bad('Please choose a villa or room.');
+      const days = int(input.days, 1, s.maxNights || 14);
+      if (!days) throw bad(`Stays can be 1–${s.maxNights || 14} nights.`);
+      const units = int(input.units, 1, st.units);
+      if (!units) throw bad(`Choose 1–${st.units} ${st.unitWord || 'unit'}s.`);
+      const guests = int(input.guests, 1, units * (st.sleeps || 2));
+      if (!guests) throw bad(`${units} ${st.unitWord || 'unit'}${units > 1 ? 's sleep' : ' sleeps'} up to ${units * (st.sleeps || 2)} guests.`);
+      sel = Object.assign(common, { venueId: st.id, venueName: st.name, unitWord: st.unitWord || 'unit', days, units, guests, addons: [], accommodation: [] });
+    } else {
+      const sl = (cat.slots || []).find(x => x.id === input.venueId);
+      if (!sl) throw bad('Please choose what you would like to book.');
+      const guests = int(input.guests, 1, sl.maxGuests || 50);
+      if (!guests) throw bad(`${sl.name}: up to ${sl.maxGuests} ${sl.per === 'guest' ? 'guests per table' : 'players'}.`);
+      const startHour = int(input.startHour, 0, 23);
+      if (Number.isNaN(startHour)) throw bad('Please choose a time.');
+      const hours = sl.per === 'guest' ? P.slotHours(sl, {}) : int(input.hours, 1, sl.maxHours || 3);
+      if (!hours) throw bad(`${sl.name} can be booked for 1–${sl.maxHours} hours.`);
+      const units = sl.per === 'guest' ? 1 : 1;
+      sel = Object.assign(common, { venueId: sl.id, venueName: sl.name, per: sl.per, days: 1, guests, startHour, hours, units, addons: [], accommodation: [] });
+      sel.usage = P.slotUsage(sl, sel);
+    }
+    if (requireFree) { const why = store.checkFree(sel, ignoreId); if (why) throw new HttpError(409, why); }
     sel.quote = P.buildQuote(sel, store.catalog(), s);
-    sel.venueName = venue.name; sel.packageName = pkg.name;
     return sel;
+  }
+  /** How long an unpaid quotation keeps its dates/slot. */
+  function holdMs(b) {
+    const s = store.settings(), k = P.kindOf(b);
+    return k === 'slot' ? (s.slotHoldMinutes || 30) * 60000 : k === 'stay' ? (s.stayHoldHours || 24) * 3600000 : (s.holdHours || 72) * 3600000;
   }
 
   /* ---------------- bookings ---------------- */
@@ -59,7 +93,7 @@ function createService(store, opts) {
       const n = store.next('booking', 1000);
       const booking = Object.assign(sel, {
         id: 'KNK-' + n, createdAt: Date.now(), source, status,
-        holdUntil: status === 'quoted' ? Date.now() + s.holdHours * 3600000 : null,
+        holdUntil: status === 'quoted' ? Date.now() + holdMs(sel) : null,
         quoteNo: store.docNo('quote', 'KNK/Q'), invoiceNo: null
       });
       store.insertBooking(booking, crypto.randomBytes(18).toString('base64url'));
@@ -77,7 +111,7 @@ function createService(store, opts) {
       const blocking = ['quoted', 'confirmed', 'planning', 'paid', 'completed'].includes(cur.status);
       const sel = validate(input, { admin: true, ignoreId: cur.id, requireFree: blocking });
       Object.assign(cur, sel);
-      if (cur.status === 'quoted') cur.holdUntil = Date.now() + store.settings().holdHours * 3600000;
+      if (cur.status === 'quoted') cur.holdUntil = Date.now() + holdMs(cur);
       store.saveBooking(cur);
       store.addHistory(cur.id, cur.status, `Quotation revised — new total ${inr(cur.quote.total)}`, actor);
       return store.getBooking(cur.id, { withKey: true });
@@ -93,10 +127,10 @@ function createService(store, opts) {
       if (!cur) throw new HttpError(404, 'Booking not found');
       const willBlock = P.STATUSES[status].blocks;
       const wasBlocking = P.STATUSES[cur.status].blocks === 'booked';
-      if (willBlock && !wasBlocking && !store.isRangeFree(cur.venueId, cur.startDate, cur.days, cur.id))
+      if (willBlock && !wasBlocking && store.checkFree(cur, cur.id))
         throw new HttpError(409, 'Those dates now clash with another booking or blocked date. Change the dates first.');
       cur.status = status;
-      if (status === 'quoted') cur.holdUntil = Date.now() + store.settings().holdHours * 3600000;
+      if (status === 'quoted') cur.holdUntil = Date.now() + holdMs(cur);
       store.saveBooking(cur);
       store.addHistory(cur.id, status, clean(note, 500) || `Status changed to ${P.STATUSES[status].label}`, actor);
       return store.getBooking(cur.id, { withKey: true });
@@ -150,8 +184,8 @@ function createService(store, opts) {
   async function createOrder(b) {
     const k = paymentKind(b);
     if (!k) throw bad('Nothing is due on this booking right now.');
-    if (k.type === 'advance' && !store.isRangeFree(b.venueId, b.startDate, b.days, b.id))
-      throw new HttpError(409, 'Sorry — your date hold expired and these dates have since been booked. Please contact us to choose new dates.');
+    if (k.type === 'advance' && store.checkFree(b, b.id))
+      throw new HttpError(409, P.kindOf(b) === 'slot' ? 'Sorry — your reservation hold expired and that time has since been booked. Please choose another time.' : 'Sorry — your hold expired and these dates have since been booked. Please contact us to choose new dates.');
     const order = await rzp.createOrder({ amountPaise: k.amount * 100, receipt: `${b.id}-${k.type}`, notes: { booking_id: b.id, type: k.type } });
     store.insertOrder({ id: order.id, bookingId: b.id, amount: k.amount, type: k.type });
     return { orderId: order.id, amount: k.amount, amountPaise: k.amount * 100, type: k.type, mode: rzp.mode(), keyId: rzp.keys() ? rzp.keys().id : null };
@@ -185,8 +219,8 @@ function createService(store, opts) {
 
   /* ---------------- documents ---------------- */
   function docCtx(b) {
-    const cat = store.catalog();
-    return { settings: store.settings(), venue: cat.venues.find(v => v.id === b.venueId), pkg: cat.packages.find(p => p.id === b.packageId), siteUrl: siteUrl() };
+    const cat = store.catalog(); const r = P.findResource(cat, b.venueId);
+    return { settings: store.settings(), venue: r ? r.item : null, pkg: cat.packages.find(p => p.id === b.packageId), siteUrl: siteUrl() };
   }
   function renderPdf(b, type, paymentId) {
     const ctx = docCtx(b);
@@ -215,8 +249,9 @@ function createService(store, opts) {
 ${paras.map(p => `<p style="font-size:15px;line-height:1.7;margin:0 0 14px;color:#3d2429">${p}</p>`).join('')}
 <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:18px 0;border-top:1px solid #eadfca;border-bottom:1px solid #eadfca;font-size:14px">
 <tr><td style="padding:10px 0;color:#8a7378">Booking</td><td style="padding:10px 0;text-align:right"><b>${esc(b.id)}</b></td></tr>
-<tr><td style="padding:10px 0;color:#8a7378">Venue</td><td style="padding:10px 0;text-align:right">${esc(b.venueName || b.venueId)}</td></tr>
-<tr><td style="padding:10px 0;color:#8a7378">Dates</td><td style="padding:10px 0;text-align:right">${esc(b.days > 1 ? `${fmtDate(b.startDate)} – ${fmtDate(P.addDays(b.startDate, b.days - 1))}` : fmtDate(b.startDate))}</td></tr>
+<tr><td style="padding:10px 0;color:#8a7378">${esc(P.describe(b).resourceLabel)}</td><td style="padding:10px 0;text-align:right">${esc(b.venueName || b.venueId)}</td></tr>
+<tr><td style="padding:10px 0;color:#8a7378">When</td><td style="padding:10px 0;text-align:right">${esc(P.describe(b).when)}</td></tr>
+<tr><td style="padding:10px 0;color:#8a7378">Guests</td><td style="padding:10px 0;text-align:right">${esc(P.describe(b).people)}</td></tr>
 <tr><td style="padding:10px 0;color:#8a7378">Total</td><td style="padding:10px 0;text-align:right">${esc(inr(b.quote.total))}</td></tr>
 <tr><td style="padding:10px 0;color:#8a7378">Paid</td><td style="padding:10px 0;text-align:right">${esc(inr(b.payments.reduce((s, p) => s + p.amount, 0)))}</td></tr>
 </table>
@@ -226,6 +261,7 @@ ${cta ? `<div style="text-align:center;margin:26px 0 8px"><a href="${cta.url}" s
 </table></td></tr></table></body></html>`;
   }
   const fmtDate = s => P.parseISO(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const balanceDueText = b => P.kindOf(b) === 'event' ? `by ${fmtDate(P.addDays(b.startDate, -(store.settings().balanceDueDaysBefore || 30)))}` : P.kindOf(b) === 'stay' ? `at check-in (${fmtDate(b.startDate)})` : 'before your reservation';
 
   function compose(b, kind, payment, o = {}) {
     const name = b.customer.name.split(/\s|&/)[0] || b.customer.name;
@@ -233,14 +269,14 @@ ${cta ? `<div style="text-align:center;margin:26px 0 8px"><a href="${cta.url}" s
     if (kind === 'quotation') {
       const subject = `${o.revised ? 'Updated quotation' : 'Your Kankana quotation'} ${b.quoteNo}`;
       const paras = [`Dear ${escT(name)},`, o.revised ? 'We have updated your quotation as discussed. The revised quotation is attached.' : 'Thank you for choosing Kankana. Your quotation is attached.',
-        b.status === 'quoted' ? `We are holding your dates until <b>${new Date(b.holdUntil).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</b>. Pay the ${inr(b.quote.advance)} advance to confirm your booking.` : 'Reply to this email if you would like any changes.'];
-      return { subject, html: emailHtml(b, o.revised ? 'Your updated quotation' : 'Your quotation is ready', paras, { url, label: b.status === 'quoted' ? 'Confirm & pay advance' : 'View booking' }), text: `Dear ${name},\n\nYour Kankana quotation ${b.quoteNo} for ${b.venueName} is attached. Total: ${inr(b.quote.total)}. Advance to confirm: ${inr(b.quote.advance)}.\n\nView and pay: ${url}\n`, docs: [['quotation']] };
+        b.status === 'quoted' ? `We are holding your ${P.kindOf(b) === 'slot' ? 'reservation' : 'dates'} until <b>${new Date(b.holdUntil).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</b>. Pay ${b.quote.advance >= b.quote.total ? 'the' : 'the ' + inr(b.quote.advance) + ' advance'}${b.quote.advance >= b.quote.total ? ' ' + inr(b.quote.total) : ''} to confirm your booking.` : 'Reply to this email if you would like any changes.'];
+      return { subject, html: emailHtml(b, o.revised ? 'Your updated quotation' : 'Your quotation is ready', paras, { url, label: b.status === 'quoted' ? 'Confirm & pay advance' : 'View booking' }), text: `Dear ${name},\n\nYour Kankana quotation ${b.quoteNo} for ${b.venueName} (${P.describe(b).when}) is attached. Total: ${inr(b.quote.total)}. Advance to confirm: ${inr(b.quote.advance)}.\n\nView and pay: ${url}\n`, docs: [['quotation']] };
     }
     if (kind === 'receipt') {
       const due = Math.max(0, b.quote.total - b.payments.reduce((s, p) => s + p.amount, 0));
       const paras = [`Dear ${escT(name)},`, `We have received your payment of <b>${inr(payment.amount)}</b>. Your receipt and GST tax invoice are attached.`,
-        due ? `Balance due: <b>${inr(due)}</b>, payable by ${fmtDate(P.addDays(b.startDate, -(store.settings().balanceDueDaysBefore || 30)))}.` : 'Your booking is now fully paid. Thank you!'];
-      if (payment.type === 'advance') paras.push('Your dates are confirmed. Our planning team will call you within 24 hours.');
+        due ? `Balance due: <b>${inr(due)}</b>, payable ${balanceDueText(b)}.` : 'Your booking is now fully paid. Thank you!'];
+      if (payment.type === 'advance') paras.push(P.kindOf(b) === 'event' ? 'Your dates are confirmed. Our planning team will call you within 24 hours.' : P.kindOf(b) === 'stay' ? 'Your stay is confirmed. We look forward to welcoming you.' : `Your reservation is confirmed — ${escT(P.describe(b).when)}. See you then.`);
       return { subject: `Payment received — ${b.id} (${inr(payment.amount)})`, html: emailHtml(b, payment.type === 'advance' ? 'Your booking is confirmed' : 'Payment received', paras, { url, label: 'View booking' }), text: `Dear ${name},\n\nWe received ${inr(payment.amount)} for booking ${b.id}. Receipt and invoice attached. Balance due: ${inr(due)}.\n\n${url}\n`, docs: [['receipt', payment.id], ['invoice']] };
     }
     const st = P.STATUSES[b.status].label;

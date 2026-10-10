@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Book Your Celebration — Kankana</title>
+<title>Book — Kankana</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/kankana-app.css">
@@ -46,6 +46,30 @@
   .sum-actions .btn{width:100%;}
   .sum-note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:12px;}
   .missing{font-size:12px;color:var(--red);margin-top:10px;min-height:1em;}
+  /* booking type tabs */
+  .kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);margin:-10px 0 28px;background:#fffdf8;}
+  .kinds button{font:inherit;font-size:15px;color:var(--ink);background:none;border:0;border-right:1px solid var(--line-soft);padding:16px 12px;cursor:pointer;text-align:center;line-height:1.3;transition:background .2s,color .2s;}
+  .kinds button:last-child{border-right:0;}
+  .kinds button small{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+  .kinds button:hover{background:#f7f0e2;}
+  .kinds button[aria-selected="true"]{background:var(--ink);color:var(--cream);}
+  .kinds button[aria-selected="true"] small{color:var(--gold-light);}
+  /* hourly time grid */
+  .time-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px;}
+  .time-grid button{font:inherit;font-size:14px;padding:11px 6px;border:1px solid var(--line);background:#fffdf8;color:var(--ink);cursor:pointer;}
+  .time-grid button small{display:block;font-size:10px;color:var(--muted);margin-top:2px;}
+  .time-grid button:hover:not([disabled]){border-color:var(--gold);}
+  .time-grid button.on{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+  .time-grid button.on small{color:var(--gold-light);}
+  .time-grid button[disabled]{opacity:.38;cursor:not-allowed;text-decoration:line-through;}
+  /* accommodation inside a celebration */
+  .acc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+  .acc-row{display:flex;align-items:center;gap:14px;border:1px solid var(--line-soft);background:#fffdf8;padding:13px 14px;font-size:14px;}
+  .acc-row div{flex:1;min-width:0;}
+  .acc-row small{display:block;color:var(--muted);font-size:12px;margin-top:2px;}
+  .acc-row select{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--paper);padding:8px 10px;}
+  .venue-opt .free{font-size:11px;color:var(--gold-deep);}
+  @media(max-width:860px){ .kinds{grid-template-columns:1fr 1fr;} .kinds button:nth-child(2){border-right:0;} .kinds button:nth-child(-n+2){border-bottom:1px solid var(--line-soft);} .acc{grid-template-columns:1fr;} }
   /* success */
   #done{display:none;max-width:720px;margin:0 auto;text-align:center;}
   #done .seal{width:74px;height:74px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:30px;color:var(--gold);}
@@ -66,59 +90,69 @@
 <nav class="k-nav">
   <a class="logo" href="index.html">Kankana</a>
   <div class="links">
-    <a href="index.html#venues" class="hide-m">Venues</a>
+    <a href="index.html#venues" class="hide-m">Explore</a>
     <a href="book.html" class="on">Book</a>
     <a href="my-booking.html">My Booking</a>
   </div>
 </nav>
 
 <header class="k-head">
-  <div class="eyebrow">Plan Your Celebration</div>
-  <h1>Check availability &amp; reserve your dates</h1>
-  <p>Choose a venue and date, shape your celebration, and receive an instant quotation. A <span id="advPctTxt">30</span>% advance confirms your booking.</p>
+  <div class="eyebrow" id="headEyebrow">Plan Your Celebration</div>
+  <h1 id="headTitle">Check availability &amp; reserve</h1>
+  <p id="headLead">Venues, villas, rooms, the turf and the café — choose what you'd like, see live availability and an instant quotation.</p>
 </header>
 
 <main class="k-wrap">
+  <nav class="kinds" id="kinds" role="tablist" aria-label="What would you like to book?">
+    <button type="button" role="tab" data-kind="event">Celebrations<small>Venues &amp; halls</small></button>
+    <button type="button" role="tab" data-kind="stay">Villas &amp; Rooms<small>Stay the night</small></button>
+    <button type="button" role="tab" data-kind="play">Turf &amp; Pickleball<small>By the hour</small></button>
+    <button type="button" role="tab" data-kind="cafe">Café<small>Reserve a table</small></button>
+  </nav>
+
   <div id="loading" class="card" style="text-align:center;padding:60px">Loading availability…</div>
   <div id="flow" class="book-layout" style="display:none">
     <div>
-      <!-- STEP 1 -->
-      <section class="card step">
-        <div class="step-h"><b>01</b><h2>Choose a venue</h2></div>
-        <div class="venue-grid" id="venues"></div>
+      <!-- STEP 1 · what -->
+      <section class="card step" id="stepWhat">
+        <div class="step-h"><b>01</b><h2 id="whatTitle">Choose a venue</h2></div>
+        <div class="venue-grid" id="items"></div>
       </section>
 
-      <!-- STEP 2 -->
+      <!-- STEP 2 · when -->
       <section class="card step">
-        <div class="step-h"><b>02</b><h2>Pick your dates</h2></div>
+        <div class="step-h"><b id="whenNo">02</b><h2 id="whenTitle">Pick your dates</h2></div>
         <div id="cal" class="k-cal"></div>
-        <div class="k-legend">
-          <span><i class="free"></i>Available</span><span><i class="sel"></i>Your dates</span>
-          <span><i class="hold"></i>On hold</span><span><i class="booked"></i>Booked</span><span><i class="blocked"></i>Unavailable</span>
+        <div class="k-legend" id="legend"></div>
+        <div class="date-row" id="dateRow">
+          <label class="field"><span id="startLbl">Start date</span><input type="date" id="startDate"></label>
+          <label class="field" id="daysField"><span id="daysLbl">Celebration length</span><select id="days"></select></label>
+          <label class="field" id="unitsField"><span id="unitsLbl">Villas</span><select id="units"></select></label>
+          <label class="field" id="guestsField2"><span id="guests2Lbl">Guests</span><input type="number" id="guests2" min="1" value="2"></label>
+          <label class="field" id="hoursField"><span>Duration</span><select id="hours"></select></label>
         </div>
-        <div class="date-row">
-          <label class="field"><span>Start date</span><input type="date" id="startDate"></label>
-          <label class="field"><span>Celebration length</span>
-            <select id="days"></select>
-          </label>
+        <div id="timeWrap" style="display:none">
+          <div class="field" style="margin-top:20px"><span id="timeLbl">Start time</span></div>
+          <div class="time-grid" id="times"></div>
         </div>
         <div class="date-msg" id="dateMsg"></div>
       </section>
 
-      <!-- STEP 3 -->
-      <section class="card step">
+      <!-- STEP 3 · celebration details (events only) -->
+      <section class="card step" id="stepShape">
         <div class="step-h"><b>03</b><h2>Shape the celebration</h2></div>
-        <div class="grid2">
-          <label class="field"><span>Guests</span><input type="number" id="guests" min="10" max="1000" value="150"></label>
-          <label class="field"><span>Guest rooms per night</span><input type="number" id="rooms" min="0" max="200" value="0"></label>
-        </div>
+        <label class="field" style="max-width:240px"><span>Guests</span><input type="number" id="guests" min="10" max="1000" value="150"></label>
         <div class="pkg-grid" id="packages"></div>
         <div class="addons" id="addons"></div>
+        <div id="accWrap" style="margin-top:26px">
+          <div class="field"><span>Stay on the estate <small style="text-transform:none;letter-spacing:0">(optional · per night of your celebration)</small></span></div>
+          <div class="acc" id="acc"></div>
+        </div>
       </section>
 
-      <!-- STEP 4 -->
+      <!-- STEP · details -->
       <section class="card step">
-        <div class="step-h"><b>04</b><h2>Your details</h2></div>
+        <div class="step-h"><b id="detailsNo">04</b><h2>Your details</h2></div>
         <form id="details" class="grid2" onsubmit="return false;">
           <label class="field"><span>Full name(s)</span><input id="cName" autocomplete="name" required placeholder="e.g. Ananya &amp; Rohan"></label>
           <label class="field"><span>Email</span><input id="cEmail" type="email" autocomplete="email" required placeholder="you@example.com"></label>
@@ -127,7 +161,7 @@
           <label class="field"><span>State</span><input id="cState" placeholder="e.g. Karnataka" autocomplete="address-level1"></label>
           <label class="field"><span>GSTIN <small style="text-transform:none;letter-spacing:0">(optional, for business invoices)</small></span><input id="cGstin" maxlength="15" placeholder="29ABCDE1234F1Z5"></label>
           <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-          <label class="field" style="grid-column:1/-1"><span>Anything we should know?</span><textarea id="cNotes" placeholder="Rituals, themes, dietary needs…"></textarea></label>
+          <label class="field" style="grid-column:1/-1"><span>Anything we should know?</span><textarea id="cNotes" placeholder="Rituals, themes, dietary needs, arrival time…"></textarea></label>
         </form>
       </section>
     </div>
@@ -141,10 +175,10 @@
         <div class="q-totals" id="sumTotals" style="width:100%"></div>
         <div class="missing" id="missing"></div>
         <div class="sum-actions">
-          <button class="btn solid" id="payBtn" type="button">Pay advance &amp; confirm</button>
+          <button class="btn solid" id="payBtn" type="button">Pay &amp; confirm</button>
           <button class="btn" id="holdBtn" type="button">Save quotation · pay later</button>
         </div>
-        <p class="sum-note">Dates are held for <span id="holdH">72</span> hours on a saved quotation. Payments are processed securely by Razorpay (UPI, cards, netbanking). Balance is due <span id="balDays">30</span> days before your celebration.</p>
+        <p class="sum-note" id="sumNote"></p>
       </div>
     </aside>
   </div>

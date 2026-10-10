@@ -127,7 +127,9 @@ function adminFrom(req) { return store.sessionAdmin(cookies(req)[COOKIE]); }
 /* ---------------- public shapes ---------------- */
 function publicSettings() {
   const s = store.settings();
-  return { advancePct: s.advancePct, gstPct: s.gstPct, holdHours: s.holdHours, roomRate: s.roomRate, maxDays: s.maxDays, balanceDueDaysBefore: s.balanceDueDaysBefore, company: s.company, terms: s.terms, payments: rzp.mode(), razorpayKeyId: rzp.keys() ? rzp.keys().id : null };
+  return { advancePct: s.advancePct, gstPct: s.gstPct, holdHours: s.holdHours, roomRate: s.roomRate, maxDays: s.maxDays, balanceDueDaysBefore: s.balanceDueDaysBefore,
+    stayAdvancePct: s.stayAdvancePct, stayHoldHours: s.stayHoldHours, maxNights: s.maxNights, slotAdvancePct: s.slotAdvancePct, slotHoldMinutes: s.slotHoldMinutes,
+    company: s.company, terms: s.terms, stayTerms: s.stayTerms, slotTerms: s.slotTerms, payments: rzp.mode(), razorpayKeyId: rzp.keys() ? rzp.keys().id : null };
 }
 function customerView(b) {
   const { accessKey, source, ...rest } = b;
@@ -156,9 +158,30 @@ route('GET', '/api/health', () => ({ ok: true, payments: rzp.mode(), email: mail
 route('GET', '/api/catalog', () => ({ catalog: store.activeCatalog(), settings: publicSettings(), today: P.todayIST() }));
 
 route('GET', '/api/availability', (req, url) => {
-  const v = url.searchParams.get('venue');
-  if (!store.catalog().venues.some(x => x.id === v)) throw new HttpError(400, 'Unknown venue');
-  return { venue: v, dates: publicOccupancy(v), today: P.todayIST() };
+  const cat = store.catalog(), today = P.todayIST();
+  const v = url.searchParams.get('venue'), st = url.searchParams.get('stay'), sl = url.searchParams.get('slot');
+  if (v) {
+    if (!cat.venues.some(x => x.id === v)) throw new HttpError(400, 'Unknown venue');
+    return { venue: v, dates: publicOccupancy(v), today };
+  }
+  if (st) {
+    const item = (cat.stays || []).find(x => x.id === st); if (!item) throw new HttpError(400, 'Unknown stay');
+    const used = store.stayNights(st), bl = store.blockedDates(st), free = {};
+    Object.keys(used).forEach(d => { free[d] = Math.max(0, item.units - used[d]); });
+    Object.keys(bl).forEach(d => { free[d] = 0; });
+    return { stay: st, units: item.units, free, today };
+  }
+  if (sl) {
+    const item = (cat.slots || []).find(x => x.id === sl); if (!item) throw new HttpError(400, 'Unknown reservation');
+    const date = url.searchParams.get('date');
+    const closed = {}; Object.keys(store.blockedDates(sl)).forEach(d => { closed[d] = true; });
+    if (!date) return { slot: sl, closed, today, hourNow: P.hourIST() };
+    if (!P.isISODate(date)) throw new HttpError(400, 'Invalid date');
+    const used = store.slotHours(sl, date), free = {};
+    for (let h = item.open; h < item.close; h++) free[h] = closed[date] ? 0 : Math.max(0, item.units - (used[h] || 0));
+    return { slot: sl, date, units: item.units, free, closed, today, hourNow: P.hourIST() };
+  }
+  throw new HttpError(400, 'Choose what to check');
 });
 
 route('POST', '/api/bookings', async (req, url, ctx) => {
@@ -270,18 +293,32 @@ route('POST', '/api/admin/bookings/:id/resend', async (req, url, ctx, p) => {
 }, { admin: true });
 route('POST', '/api/admin/blocked', async (req) => {
   const { venueId, date, reason } = await readJson(req);
-  if (!store.catalog().venues.some(v => v.id === venueId) || !P.isISODate(date)) throw new HttpError(400, 'Invalid date or venue');
+  if (!P.findResource(store.catalog(), venueId) || !P.isISODate(date)) throw new HttpError(400, 'Invalid date or venue');
   return { blocked: store.toggleBlock(venueId, date, String(reason || '').slice(0, 120)) };
+}, { admin: true });
+/* Live availability check for the admin quotation builder (same rules as saving). */
+route('POST', '/api/admin/check', async (req) => {
+  const b = await readJson(req);
+  const sel = {
+    kind: ['stay', 'slot'].includes(b.kind) ? b.kind : 'event', venueId: String(b.venueId || ''), startDate: String(b.startDate || ''),
+    days: Math.max(1, Math.round(+b.days || 1)), units: Math.max(1, Math.round(+b.units || 1)), guests: Math.max(1, Math.round(+b.guests || 1)),
+    startHour: Math.round(+b.startHour), hours: Math.max(1, Math.round(+b.hours || 1)),
+    accommodation: (Array.isArray(b.accommodation) ? b.accommodation : []).slice(0, 20).map(a => ({ id: String(a.id || ''), units: Math.max(0, Math.round(+a.units || 0)) })).filter(a => a.units)
+  };
+  if (!P.findResource(store.catalog(), sel.venueId)) return { reason: 'Choose what is being booked.' };
+  return { reason: store.checkFree(sel, b.ignoreId ? String(b.ignoreId) : null) };
 }, { admin: true });
 route('PUT', '/api/admin/settings', async (req) => {
   const b = await readJson(req); const s = store.settings();
   const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
   const next = Object.assign(s, {
     advancePct: num(b.advancePct, 1, 100, s.advancePct), gstPct: num(b.gstPct, 0, 28, s.gstPct), holdHours: num(b.holdHours, 1, 720, s.holdHours),
-    roomRate: num(b.roomRate, 0, 1e7, s.roomRate), maxDays: num(b.maxDays, 1, 14, s.maxDays), balanceDueDaysBefore: num(b.balanceDueDaysBefore, 0, 365, s.balanceDueDaysBefore)
+    roomRate: num(b.roomRate, 0, 1e7, s.roomRate), maxDays: num(b.maxDays, 1, 14, s.maxDays), balanceDueDaysBefore: num(b.balanceDueDaysBefore, 0, 365, s.balanceDueDaysBefore),
+    stayAdvancePct: num(b.stayAdvancePct, 1, 100, s.stayAdvancePct), stayHoldHours: num(b.stayHoldHours, 1, 720, s.stayHoldHours), maxNights: num(b.maxNights, 1, 60, s.maxNights),
+    slotAdvancePct: num(b.slotAdvancePct, 1, 100, s.slotAdvancePct), slotHoldMinutes: num(b.slotHoldMinutes, 5, 1440, s.slotHoldMinutes)
   });
   if (b.company) ['name', 'legalName', 'address', 'email', 'phone', 'gstin', 'state', 'sac'].forEach(k => { if (k in b.company) next.company[k] = String(b.company[k] || '').slice(0, 200); });
-  if (Array.isArray(b.terms)) next.terms = b.terms.map(t => String(t).slice(0, 400)).filter(Boolean).slice(0, 12);
+  ['terms', 'stayTerms', 'slotTerms'].forEach(k => { if (Array.isArray(b[k])) next[k] = b[k].map(t => String(t).slice(0, 400)).filter(Boolean).slice(0, 12); });
   store.setKV('settings', next);
   return { settings: store.settings() };
 }, { admin: true });
@@ -291,12 +328,22 @@ route('PUT', '/api/admin/catalog', async (req) => {
   const str = (s, n) => String(s == null ? '' : s).trim().slice(0, n);
   const pos = (n, d = 0) => Math.max(0, Math.round(+n || d));
   const uniq = (list, mk) => { const seen = new Set(); return (list || []).map(mk).filter(x => x.id && x.name && !seen.has(x.id) && seen.add(x.id)); };
+  const gst = v => (v === '' || v == null || !Number.isFinite(+v)) ? '' : Math.min(28, Math.max(0, +v));
+  const hour = (v, d) => Math.min(24, Math.max(0, Math.round(Number.isFinite(+v) ? +v : d)));
   const cat = {
     venues: uniq(b.venues, v => ({ id: slug(v.id || v.name), name: str(v.name, 120), region: str(v.region, 60), capacity: pos(v.capacity, 100), perDay: pos(v.perDay), blurb: str(v.blurb, 240), active: v.active !== false })),
+    stays: uniq(b.stays, v => ({ id: slug(v.id || v.name), name: str(v.name, 120), unitWord: str(v.unitWord, 20).toLowerCase() || 'unit', units: Math.max(1, pos(v.units, 1)), sleeps: Math.max(1, pos(v.sleeps, 2)), perNight: pos(v.perNight), gstPct: gst(v.gstPct), sac: str(v.sac, 10), blurb: str(v.blurb, 240), active: v.active !== false })),
+    slots: uniq(b.slots, v => { const open = hour(v.open, 6), close = Math.max(open + 1, hour(v.close, 22));
+      return { id: slug(v.id || v.name), name: str(v.name, 120), per: v.per === 'guest' ? 'guest' : 'hour', units: Math.max(1, pos(v.units, 1)), rate: pos(v.rate), open, close,
+        maxHours: Math.max(1, Math.min(12, pos(v.maxHours, 2))), sitting: Math.max(1, Math.min(6, pos(v.sitting, 2))), maxGuests: Math.max(1, pos(v.maxGuests, 10)),
+        gstPct: gst(v.gstPct), sac: str(v.sac, 10), blurb: str(v.blurb, 240), active: v.active !== false }; }),
     packages: uniq(b.packages, p => ({ id: slug(p.id || p.name), name: str(p.name, 80), perGuest: pos(p.perGuest), desc: str(p.desc, 240), active: p.active !== false })),
     addons: uniq(b.addons, a => ({ id: slug(a.id || a.name), name: str(a.name, 120), price: pos(a.price), unit: a.unit === 'perGuest' ? 'perGuest' : 'flat', active: a.active !== false }))
   };
   if (!cat.venues.length || !cat.packages.length) throw new HttpError(400, 'Keep at least one venue and one package.');
+  const ids = [...cat.venues, ...cat.stays, ...cat.slots].map(x => x.id);
+  const dup = ids.find((x, i) => ids.indexOf(x) !== i);
+  if (dup) throw new HttpError(400, `Two items share the name/id "${dup}". Give each venue, stay and reservation a different name.`);
   store.setKV('catalog', cat);
   return { catalog: cat };
 }, { admin: true });
@@ -314,8 +361,8 @@ route('POST', '/api/admin/test-email', async (req, url, ctx) => {
   return { ok: true };
 }, { admin: true });
 route('GET', '/api/admin/export.csv', () => {
-  const cols = ['Booking ID', 'Created', 'Status', 'Client', 'Email', 'Phone', 'City', 'Venue', 'Start', 'Days', 'Guests', 'Package', 'Total', 'Paid', 'Balance', 'Quotation', 'Invoice'];
-  const rows = store.allBookings().map(b => { const paid = b.payments.reduce((s, p) => s + p.amount, 0); return [b.id, new Date(b.createdAt).toISOString(), P.STATUSES[b.status].label, b.customer.name, b.customer.email, b.customer.phone, b.customer.city, b.venueName, b.startDate, b.days, b.guests, b.packageName, b.quote.total, paid, b.quote.total - paid, b.quoteNo, b.invoiceNo || '']; });
+  const cols = ['Booking ID', 'Created', 'Status', 'Type', 'Client', 'Email', 'Phone', 'City', 'Booked', 'When', 'Start', 'Days/Nights', 'Guests', 'Details', 'Total', 'Paid', 'Balance', 'Quotation', 'Invoice'];
+  const rows = store.allBookings().map(b => { const paid = b.payments.reduce((s, p) => s + p.amount, 0), ds = P.describe(b); return [b.id, new Date(b.createdAt).toISOString(), P.STATUSES[b.status].label, ds.label, b.customer.name, b.customer.email, b.customer.phone, b.customer.city, b.venueName, ds.when, b.startDate, b.days, b.guests, [ds.people].concat(ds.extras).join(' · '), b.quote.total, paid, b.quote.total - paid, b.quoteNo, b.invoiceNo || '']; });
   const csv = [cols, ...rows].map(r => r.map(x => { let s = String(x == null ? '' : x); if (/^[=+\-@]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; }).join(',')).join('\r\n');
   return { __raw: true, type: 'text/csv; charset=utf-8', body: '﻿' + csv, headers: { 'Content-Disposition': 'attachment; filename="kankana-bookings.csv"' } };
 }, { admin: true });

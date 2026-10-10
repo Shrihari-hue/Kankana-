@@ -6,12 +6,26 @@ const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
 const P = require('../../assets/kankana-pricing.js');
 
+/* Starting catalogue — names, capacities and prices are placeholders the team edits in Admin → Venues & Pricing.
+   ids must be unique across venues, stays and slots (they key availability). */
 const DEFAULT_CATALOG = {
   venues: [
-    { id: 'uluwatu', name: 'Clifftop Pavilion, Uluwatu', region: 'Bali', capacity: 250, perDay: 850000, blurb: 'Open-air mandap above the Indian Ocean, sunset pheras.', active: true },
-    { id: 'ubud', name: 'Villa Kancana, Ubud', region: 'Bali', capacity: 120, perDay: 620000, blurb: 'Five jungle pavilions for intimate multi-day celebrations.', active: true },
-    { id: 'inle', name: 'Inle Lake Pavilion', region: 'Myanmar', capacity: 300, perDay: 540000, blurb: 'Lantern-lit lakeside receptions on stilted teak decks.', active: true },
-    { id: 'bagan', name: 'Bagan Temple Gardens', region: 'Myanmar', capacity: 400, perDay: 710000, blurb: 'Temple-inspired décor among ten thousand spires.', active: true }
+    { id: 'water-court', name: 'The Water Court', region: 'Event venue', capacity: 300, perDay: 300000, blurb: 'An open courtyard around still water — sangeet nights and receptions.', active: true },
+    { id: 'colonnade', name: 'The Colonnade', region: 'Event venue', capacity: 500, perDay: 380000, blurb: 'Pheras beneath carved arches, with the fields beyond.', active: true },
+    { id: 'garden-pavilions', name: 'The Garden Pavilions', region: 'Event venue', capacity: 250, perDay: 220000, blurb: 'Shaded lawns for mehndi, haldi and long lunches.', active: true },
+    { id: 'sunset-terrace', name: 'The Sunset Terrace', region: 'Event venue', capacity: 150, perDay: 180000, blurb: 'West-facing terrace for sundowners and intimate dinners.', active: true },
+    { id: 'reception-hall', name: 'Reception Hall', region: 'Hall', capacity: 800, perDay: 350000, blurb: 'The largest indoor space — receptions, sangeet stages and banquets.', active: true },
+    { id: 'dining-hall', name: 'Dining Hall', region: 'Hall', capacity: 300, perDay: 150000, blurb: 'Seated dinners and buffets for the whole family.', active: true },
+    { id: 'amphitheatre', name: 'Amphitheatre', region: 'Open-air', capacity: 600, perDay: 250000, blurb: 'Tiered open-air seating for performances, sangeet and screenings.', active: true }
+  ],
+  stays: [
+    { id: 'villa', name: 'Private Villa', unitWord: 'villa', units: 6, sleeps: 4, perNight: 22000, gstPct: 18, sac: '996311', blurb: 'Six private villas — space for a family of four.', active: true },
+    { id: 'room', name: 'Guest Room', unitWord: 'room', units: 20, sleeps: 2, perNight: 7500, gstPct: 5, sac: '996311', blurb: 'Twenty rooms for guests and family.', active: true }
+  ],
+  slots: [
+    { id: 'turf', name: 'Turf', per: 'hour', units: 1, rate: 1800, open: 6, close: 23, maxHours: 3, maxGuests: 22, gstPct: 18, sac: '999652', blurb: 'Floodlit turf for football and cricket — booked by the hour.', active: true },
+    { id: 'pickleball', name: 'Pickleball Court', per: 'hour', units: 1, rate: 900, open: 6, close: 22, maxHours: 2, maxGuests: 4, gstPct: 18, sac: '999652', blurb: 'One court, paddles available on request — booked by the hour.', active: true },
+    { id: 'cafe', name: 'The Café', per: 'guest', units: 40, rate: 300, open: 8, close: 22, sitting: 2, maxGuests: 12, gstPct: 5, sac: '996331', blurb: 'Reserve a table for breakfast, lunch or evening coffee.', active: true }
   ],
   packages: [
     { id: 'essential', name: 'Essential', perGuest: 2600, desc: 'Plated vegetarian menu, standard florals, venue lighting', active: true },
@@ -27,13 +41,19 @@ const DEFAULT_CATALOG = {
     { id: 'transfers', name: 'Airport Transfers', price: 1200, unit: 'perGuest', active: true }
   ]
 };
+const LEGACY_VENUES = ['uluwatu', 'ubud', 'inle', 'bagan'];
 
 const DEFAULT_SETTINGS = {
   advancePct: 30,
   gstPct: 18,
   holdHours: 72,
-  roomRate: 18000,
+  roomRate: 0,
   maxDays: 5,
+  stayAdvancePct: 50,
+  stayHoldHours: 24,
+  maxNights: 14,
+  slotAdvancePct: 100,
+  slotHoldMinutes: 30,
   balanceDueDaysBefore: 30,
   company: {
     name: 'Kankana — Weddings & Beyond',
@@ -45,6 +65,16 @@ const DEFAULT_SETTINGS = {
     state: 'Karnataka',
     sac: '998596'
   },
+  stayTerms: [
+    'Your stay is confirmed on receipt of the advance.',
+    'The balance is payable at check-in.',
+    'Please carry a government photo ID for each adult guest.'
+  ],
+  slotTerms: [
+    'Reservations are confirmed on receipt of payment.',
+    'Your slot ends at the booked time — please arrive a few minutes early.',
+    'To reschedule, contact us at least 24 hours before your slot.'
+  ],
   terms: [
     'Dates are confirmed only on receipt of the advance.',
     'Balance is payable 30 days before the first event date.',
@@ -132,6 +162,21 @@ class Store {
     this.db = db;
     if (this.getKV('catalog') == null) this.setKV('catalog', DEFAULT_CATALOG);
     if (this.getKV('settings') == null) this.setKV('settings', DEFAULT_SETTINGS);
+    this.migrate();
+  }
+
+  /** One-time upgrade of older databases: add stays & slots; swap the sample Bali/Myanmar venues for the estate's. */
+  migrate() {
+    const cat = this.getKV('catalog');
+    if (cat && !Array.isArray(cat.stays)) {
+      const sample = (cat.venues || []).length && cat.venues.every(v => LEGACY_VENUES.includes(v.id));
+      this.setKV('catalog', Object.assign({}, cat, {
+        venues: sample ? DEFAULT_CATALOG.venues : cat.venues,
+        stays: DEFAULT_CATALOG.stays, slots: DEFAULT_CATALOG.slots
+      }));
+      const st = this.getKV('settings');
+      if (st && st.roomRate === 18000) this.setKV('settings', Object.assign({}, st, { roomRate: 0 }));
+    }
   }
 
   /* ---------- generic ---------- */
@@ -159,7 +204,8 @@ class Store {
   catalog() { return this.getKV('catalog') || DEFAULT_CATALOG; }
   activeCatalog() {
     const c = this.catalog();
-    return { venues: c.venues.filter(x => x.active !== false), packages: c.packages.filter(x => x.active !== false), addons: c.addons.filter(x => x.active !== false) };
+    const on = l => (l || []).filter(x => x.active !== false);
+    return { venues: on(c.venues), stays: on(c.stays), slots: on(c.slots), packages: on(c.packages), addons: on(c.addons) };
   }
 
   /* ---------- bookings ---------- */
@@ -202,6 +248,69 @@ class Store {
     });
     return map;
   }
+  /** Bookings that currently take capacity (live holds + confirmed), with their JSON data parsed. */
+  liveRows(ignoreId) {
+    const now = Date.now();
+    return this.db.prepare(`SELECT id,status,venue_id,start_date,days,hold_until,data FROM bookings WHERE status IN ('quoted','confirmed','planning','paid','completed')`).all()
+      .filter(r => r.id !== ignoreId && !(r.status === 'quoted' && r.hold_until && r.hold_until < now))
+      .map(r => Object.assign({}, r, { d: JSON.parse(r.data) }));
+  }
+  blockedDates(id) { const m = {}; this.db.prepare('SELECT date,reason FROM blocked WHERE venue_id=?').all(id).forEach(x => { m[x.date] = x.reason || 'Unavailable'; }); return m; }
+
+  /** Villas/rooms: date -> units taken that night (stay bookings + accommodation inside celebrations). */
+  stayNights(stayId, ignoreId) {
+    const used = {};
+    this.liveRows(ignoreId).forEach(r => {
+      let n = 0;
+      if (r.venue_id === stayId && r.d.kind === 'stay') n = +r.d.units || 1;
+      else if ((r.d.kind || 'event') === 'event') { const a = (r.d.accommodation || []).find(x => x.id === stayId); n = a ? +a.units || 0 : 0; }
+      if (n) P.eventDates(r.start_date, r.days).forEach(d => { used[d] = (used[d] || 0) + n; });
+    });
+    return used;
+  }
+  /** Turf/court/café on one date: hour -> units (courts) or seats (café) taken. */
+  slotHours(slotId, date, ignoreId) {
+    const used = {};
+    this.liveRows(ignoreId).forEach(r => {
+      if (r.venue_id !== slotId || r.start_date !== date || r.d.kind !== 'slot') return;
+      for (let h = r.d.startHour; h < r.d.startHour + (r.d.hours || 1); h++) used[h] = (used[h] || 0) + (+r.d.usage || 1);
+    });
+    return used;
+  }
+
+  /** '' if the selection fits, otherwise a customer-facing reason. */
+  checkFree(sel, ignoreId) {
+    const cat = this.catalog();
+    const kind = P.kindOf(sel);
+    if (!P.isISODate(sel.startDate) || sel.startDate < P.todayIST()) return 'Please choose a future date.';
+    if (kind === 'event') {
+      const occ = this.occupancy(sel.venueId, ignoreId);
+      if (!P.eventDates(sel.startDate, sel.days).every(d => !occ[d])) return 'Sorry — those dates are no longer available at this venue. Please choose other dates.';
+      for (const a of (sel.accommodation || [])) {
+        if (!a.units) continue;
+        const s = (cat.stays || []).find(x => x.id === a.id); if (!s) return 'Please choose valid accommodation.';
+        const used = this.stayNights(s.id, ignoreId), bl = this.blockedDates(s.id);
+        const night = P.eventDates(sel.startDate, sel.days).find(d => bl[d] || (used[d] || 0) + a.units > s.units);
+        if (night) return `Only ${Math.max(0, bl[night] ? 0 : s.units - (used[night] || 0))} ${s.unitWord || 'unit'}(s) are free on ${P.fmtDate(night)}. Please reduce the number or change dates.`;
+      }
+      return '';
+    }
+    if (kind === 'stay') {
+      const s = (cat.stays || []).find(x => x.id === sel.venueId); if (!s) return 'Please choose a stay.';
+      const used = this.stayNights(s.id, ignoreId), bl = this.blockedDates(s.id);
+      const night = P.eventDates(sel.startDate, sel.days).find(d => bl[d] || (used[d] || 0) + (+sel.units || 1) > s.units);
+      return night ? `Sorry — not enough ${s.unitWord || 'unit'}s are free on the night of ${P.fmtDate(night)}. Please change your dates or the number of ${s.unitWord || 'unit'}s.` : '';
+    }
+    const s = (cat.slots || []).find(x => x.id === sel.venueId); if (!s) return 'Please choose what to book.';
+    if (this.blockedDates(s.id)[sel.startDate]) return `${s.name} is closed on that day. Please choose another date.`;
+    const h0 = Math.round(+sel.startHour), hrs = P.slotHours(s, sel), need = P.slotUsage(s, sel);
+    if (!(h0 >= s.open && h0 + hrs <= s.close)) return `${s.name} is open ${P.fmtHour(s.open)} – ${P.fmtHour(s.close)}.`;
+    if (sel.startDate === P.todayIST() && h0 <= P.hourIST()) return 'Please choose a later time today.';
+    const used = this.slotHours(s.id, sel.startDate, ignoreId);
+    for (let h = h0; h < h0 + hrs; h++) if ((used[h] || 0) + need > s.units) return `Sorry — ${P.fmtHour(h)} is already taken. Please choose another time.`;
+    return '';
+  }
+
   isRangeFree(venueId, start, days, ignoreId) {
     if (!P.isISODate(start) || start < P.todayIST()) return false;
     const occ = this.occupancy(venueId, ignoreId);

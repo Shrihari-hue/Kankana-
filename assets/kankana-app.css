@@ -183,3 +183,7 @@ a{color:inherit;}
   .grid2,.grid3{grid-template-columns:1fr;}
   .card{padding:20px;}
 }
+
+/* calendar day labels (e.g. "2 left") */
+.k-cal-badge{position:absolute;left:0;right:0;bottom:4px;font-size:9px;letter-spacing:.04em;color:var(--gold-deep);text-align:center;line-height:1}
+.k-cal-day.sel .k-cal-badge{color:inherit;opacity:.85}

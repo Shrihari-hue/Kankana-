@@ -183,37 +183,44 @@
   /* ================================================================ 02 EXPLORE VENUES */
   const COL = { blue: '#3d6fe0', green: '#4f9a3c', yellow: '#cfc43a', orange: '#e08a2a', navy: '#3a3aa6' };
   const SUITE = '1613553474179-e1eda3ea5734', BED = '1718894071528-1108a094cc78', LOUNGE = '1668277157922-ecd8330ea809';
+  /* The estate's real facilities. Zone layouts are illustrative; capacities match the booking catalog defaults. */
   const SPACES = [
-    { n: '01', name: 'The Gate', x: .50, y: .80, tag: 'Baraat arrivals · Welcome rituals', photo: F(85), outer: [100, 70, 800, 480], view: ['Lantern garden', 'Palace forecourt'],
+    { n: '01', name: 'The Water Court', id: 'water-court', x: .50, y: .52, tag: 'Sangeet · Reception around the pool', photo: F(133), outer: [80, 50, 840, 520], view: ['West arcade', 'East arcade'],
       zones: [
-        { n: 'Arrival Forecourt', t: 'arrival', c: 'green', r: [130, 290, 740, 230], cap: 400, area: '1,400 sq m', best: 'Baraat · Dhol welcome', pos: 'South · At the gate', ph: F(73) },
-        { n: 'Lantern Walk', t: 'lawn', c: 'blue', r: [130, 100, 350, 170], cap: 150, area: '520 sq m', best: 'Welcome drinks · Portraits', pos: 'North-west', ph: F(85) },
-        { n: 'Gatehouse Lounge', t: 'lounge', c: 'yellow', r: [520, 100, 350, 170], cap: 60, area: '310 sq m', best: 'Family greeting · Chai', pos: 'North-east', ph: F(97) }] },
-    { n: '02', name: 'The Water Court', x: .50, y: .52, tag: 'Sangeet · Reception', photo: F(133), outer: [80, 50, 840, 520], view: ['West arcade', 'East arcade'],
+        { n: 'West Lawn', t: 'dining', c: 'green', r: [110, 80, 230, 460], cap: 180, best: 'Sangeet dinner · Reception', pos: 'West of the pool', ph: F(121) },
+        { n: 'Fountain Deck', t: 'pool', c: 'navy', r: [360, 80, 280, 330], cap: 120, best: 'Cocktails · First look', pos: 'Centre', ph: F(157) },
+        { n: 'Court Stage', t: 'stage', c: 'blue', r: [360, 430, 280, 110], cap: 300, best: 'Sangeet · Performances', pos: 'South, facing the pool', ph: F(145) },
+        { n: 'East Lawn', t: 'dining', c: 'orange', r: [660, 80, 230, 460], cap: 180, best: 'Reception · Buffet', pos: 'East of the pool', ph: F(169) }] },
+    { n: '02', name: 'The Colonnade', id: 'colonnade', x: .58, y: .35, tag: 'Pheras · Vows beneath the arches', photo: F(193), outer: [70, 110, 860, 400], view: ['Water court', 'Sunset fields'],
       zones: [
-        { n: 'West Lawn', t: 'dining', c: 'green', r: [110, 80, 230, 460], cap: 180, area: '980 sq m', best: 'Sangeet dinner · Reception', pos: 'West of the pool', ph: F(121) },
-        { n: 'Fountain Deck', t: 'pool', c: 'navy', r: [360, 80, 280, 330], cap: 120, area: '640 sq m', best: 'Cocktails · First look', pos: 'Centre', ph: F(157) },
-        { n: 'Court Stage', t: 'stage', c: 'blue', r: [360, 430, 280, 110], cap: 300, area: '420 sq m', best: 'Sangeet · Performances', pos: 'South, facing the pool', ph: F(145) },
-        { n: 'East Lawn', t: 'dining', c: 'orange', r: [660, 80, 230, 460], cap: 180, area: '980 sq m', best: 'Reception · Buffet', pos: 'East of the pool', ph: F(169) }] },
-    { n: '03', name: 'The Colonnade', x: .58, y: .35, tag: 'Pheras · Vows beneath the arches', photo: F(193), outer: [70, 110, 860, 400], view: ['Water court', 'Sunset fields'],
+        { n: 'North Arcade', t: 'lounge', c: 'blue', r: [100, 140, 200, 340], cap: 80, best: 'Lounge · Bar', pos: 'North wing', ph: F(205) },
+        { n: 'Mandap Hall', t: 'ceremony', c: 'yellow', r: [320, 140, 360, 340], cap: 500, best: 'Pheras · Vows', pos: 'Central hall', ph: F(193) },
+        { n: 'South Arcade', t: 'lounge', c: 'green', r: [700, 140, 200, 340], cap: 80, best: 'Family lounge', pos: 'South wing', ph: F(181) }] },
+    { n: '03', name: 'Garden Pavilions', id: 'garden-pavilions', x: .22, y: .50, tag: 'Mehndi · Haldi under the banyan', photo: F(109), outer: [90, 70, 820, 480], view: ['Orchard', 'Water court'],
       zones: [
-        { n: 'North Arcade', t: 'lounge', c: 'blue', r: [100, 140, 200, 340], cap: 80, area: '380 sq m', best: 'Lounge · Bar', pos: 'North wing', ph: F(205) },
-        { n: 'Mandap Hall', t: 'ceremony', c: 'yellow', r: [320, 140, 360, 340], cap: 250, area: '1,100 sq m', best: 'Pheras · Vows', pos: 'Central hall', ph: F(193) },
-        { n: 'South Arcade', t: 'lounge', c: 'green', r: [700, 140, 200, 340], cap: 80, area: '380 sq m', best: 'Family lounge', pos: 'South wing', ph: F(181) }] },
-    { n: '04', name: 'Garden Pavilions', x: .22, y: .50, tag: 'Mehndi · Haldi under the banyan', photo: F(109), outer: [90, 70, 820, 480], view: ['Orchard', 'Water court'],
+        { n: 'Mehndi Garden', t: 'lawn', c: 'green', r: [120, 100, 400, 250], cap: 250, best: 'Mehndi · Haldi', pos: 'Under the banyan', ph: F(109) },
+        { n: 'Haldi Lawn', t: 'dining', c: 'yellow', r: [120, 370, 400, 150], cap: 120, best: 'Haldi brunch', pos: 'South lawn', ph: F(121) },
+        { n: 'Banyan Deck', t: 'lounge', c: 'orange', r: [540, 100, 340, 420], cap: 60, best: 'Cocktails · Lounge', pos: 'East terrace', ph: F(205) }] },
+    { n: '04', name: 'The Sunset Terrace', id: 'sunset-terrace', x: .93, y: .26, tag: 'Sundowners · Toasts', photo: F(229), outer: [130, 130, 740, 360], view: ['Palace', 'Sunset fields'],
       zones: [
-        { n: 'Mehndi Garden', t: 'lawn', c: 'green', r: [120, 100, 400, 250], cap: 150, area: '900 sq m', best: 'Mehndi · Haldi', pos: 'Under the banyan', ph: F(109) },
-        { n: 'Haldi Lawn', t: 'dining', c: 'yellow', r: [120, 370, 400, 150], cap: 120, area: '560 sq m', best: 'Haldi brunch', pos: 'South lawn', ph: F(121) },
-        { n: 'Banyan Deck', t: 'lounge', c: 'orange', r: [540, 100, 340, 420], cap: 60, area: '720 sq m', best: 'Cocktails · Lounge', pos: 'East terrace', ph: F(205) }] },
-    { n: '05', name: 'The Suites', x: .62, y: .17, tag: 'Stays for the couple & family', photo: U(SUITE), outer: [50, 110, 900, 400], view: ['Courtyard', 'Desert view'],
+        { n: 'Sunset Lounge', t: 'lounge', c: 'orange', r: [160, 160, 420, 300], cap: 60, best: 'Sundowners · Toasts', pos: 'West-facing', ph: F(229) },
+        { n: 'Cocktail Deck', t: 'dining', c: 'blue', r: [600, 160, 240, 300], cap: 150, best: 'After-party · Dessert', pos: 'North-west corner', ph: F(217) }] },
+    { n: '05', name: 'Reception & Dining Halls', id: 'reception-hall', x: .10, y: .30, tag: 'Receptions · Seated dinners', photo: F(181), outer: [60, 90, 880, 440], view: ['Garden pavilions', 'Forecourt'],
       zones: [
-        { n: 'Palace Suite', t: 'suite', c: 'yellow', r: [80, 140, 280, 340], cap: 2, area: '140 sq m', best: 'The couple · Getting ready', pos: 'Upper floor, west', ph: U(BED) },
-        { n: 'Courtyard Suites', t: 'suite', c: 'navy', r: [380, 140, 240, 340], cap: 4, area: '2 × 70 sq m', best: 'Parents · Close family', pos: 'Upper floor, centre', ph: U(SUITE) },
-        { n: 'Family Wing', t: 'suite', c: 'orange', r: [640, 140, 280, 340], cap: 8, area: '4 × 60 sq m', best: 'Siblings · Friends', pos: 'Upper floor, east', ph: U(LOUNGE) }] },
-    { n: '06', name: 'The Sunset Terrace', x: .93, y: .26, tag: 'Sundowners · Toasts', photo: F(229), outer: [130, 130, 740, 360], view: ['Palace', 'Sunset fields'],
+        { n: 'Reception Hall', id: 'reception-hall', t: 'stage', ty: 'Hall', c: 'yellow', r: [90, 120, 480, 380], cap: 800, best: 'Receptions · Sangeet', pos: 'West wing', ph: F(169) },
+        { n: 'Dining Hall', id: 'dining-hall', t: 'dining', ty: 'Hall', c: 'green', r: [590, 120, 320, 380], cap: 300, best: 'Wedding feasts · Buffets', pos: 'Beside the reception hall', ph: F(121) }] },
+    { n: '06', name: 'The Amphitheatre', id: 'amphitheatre', x: .82, y: .46, tag: 'Performances under the open sky', photo: F(145), outer: [120, 90, 760, 440], view: ['Colonnade', 'Sunset terrace'],
       zones: [
-        { n: 'Sunset Lounge', t: 'lounge', c: 'orange', r: [160, 160, 420, 300], cap: 60, area: '640 sq m', best: 'Sundowners · Toasts', pos: 'West-facing', ph: F(229) },
-        { n: 'Cocktail Deck', t: 'dining', c: 'blue', r: [600, 160, 240, 300], cap: 120, area: '400 sq m', best: 'After-party · Dessert', pos: 'North-west corner', ph: F(217) }] }
+        { n: 'Amphitheatre', t: 'ceremony', ty: 'Open-air', c: 'orange', r: [150, 120, 700, 380], cap: 600, best: 'Sangeet · Concerts · Screenings', pos: 'East of the water court', ph: F(145) }] },
+    { n: '07', name: 'Villas & Rooms', id: 'villa', x: .62, y: .17, tag: 'Six private villas · Twenty guest rooms', photo: U(SUITE), outer: [50, 110, 900, 400], view: ['Courtyard', 'Desert view'],
+      zones: [
+        { n: 'Private Villas', id: 'villa', t: 'suite', ty: '6 villas', c: 'yellow', r: [80, 140, 400, 340], cap: 4, unit: 'per villa', best: 'The couple · Parents · Close family', pos: 'Upper floor & garden wing', ph: U(BED) },
+        { n: 'Guest Rooms', id: 'room', t: 'suite', ty: '20 rooms', c: 'navy', r: [500, 140, 420, 340], cap: 2, unit: 'per room', best: 'Wedding guests · Friends', pos: 'Around the courtyard', ph: U(LOUNGE) }] },
+    { n: '08', name: 'Café & Courts', id: 'cafe', x: .18, y: .14, tag: 'The café · Turf · Pickleball', photo: F(85), outer: [60, 90, 880, 440], view: ['Orchard', 'Palace'],
+      zones: [
+        { n: 'The Café', id: 'cafe', t: 'dining', ty: 'Café', c: 'orange', r: [90, 120, 260, 380], cap: 40, unit: 'seats', best: 'Coffee · Breakfast · Long lunches', pos: 'By the orchard', ph: F(97) },
+        { n: 'Turf', id: 'turf', t: 'lawn', ty: 'Sport', c: 'green', r: [370, 120, 340, 380], cap: 22, unit: 'players', best: 'Football · Cricket nets · Games', pos: 'Beyond the garden wall', ph: F(73) },
+        { n: 'Pickleball Court', id: 'pickleball', t: 'lawn', ty: 'Sport', c: 'blue', r: [730, 120, 180, 380], cap: 4, unit: 'players', best: 'Doubles · Morning games', pos: 'Next to the turf', ph: F(85) }] }
   ];
   const TYPE = { arrival: 'Arrival', lawn: 'Garden', lounge: 'Lounge', dining: 'Dining', pool: 'Water deck', stage: 'Stage', ceremony: 'Ceremony', suite: 'Suite' };
 
@@ -315,7 +322,7 @@
       if (i < 0) return;
       const s = SPACES[i];
       exScan.style.top = (s.y * 100) + '%';
-      $('#exNow').innerHTML = `<div class="cap">${s.n} · Space</div><h3>${esc(s.name)}</h3><p>${esc(s.tag)}</p><p class="cap sm" style="opacity:.6;margin-top:6px">Up to ${Math.max(...s.zones.map(z => z.cap))} guests · ${s.zones.length} zones</p>`;
+      $('#exNow').innerHTML = `<div class="cap">${s.n} · Space</div><h3>${esc(s.name)}</h3><p>${esc(s.tag)}</p><p class="cap sm" style="opacity:.6;margin-top:6px">${s.zones.length > 1 ? s.zones.length + ' spaces' : 'Up to ' + s.zones[0].cap + ' guests'}</p>`;
     };
     [exHs, exList].forEach(box => {
       box.addEventListener('mouseover', e => { const b = e.target.closest('[data-s]'); if (b) hover(+b.dataset.s); });
@@ -354,8 +361,11 @@
     curZ = j; const s = SPACES[curS], z = s.zones[j];
     $('#zSpace').textContent = s.name;
     $('#zName').textContent = z.n;
-    $('#zType').textContent = `${TYPE[z.t]} · Type ${String.fromCharCode(65 + j)}`;
-    $('#zDl').innerHTML = [['Capacity', `Up to ${z.cap} guests`], ['Area', z.area], ['Best for', z.best], ['Position', z.pos]].map(([a, b]) => `<dt>${a}</dt><dd>${esc(b)}</dd>`).join('');
+    $('#zType').textContent = z.ty || `${TYPE[z.t]} · Type ${String.fromCharCode(65 + j)}`;
+    const cap = z.unit === 'seats' ? `${z.cap} seats` : z.unit === 'players' ? `Up to ${z.cap} players` : z.unit ? `Sleeps ${z.cap} ${z.unit}` : `Up to ${z.cap} guests`;
+    const id = z.id || s.id;
+    $('#zDl').innerHTML = [['Capacity', cap], ['Area', z.area], ['Best for', z.best], ['Position', z.pos]].filter(r => r[1]).map(([a, b]) => `<dt>${a}</dt><dd>${esc(b)}</dd>`).join('')
+      + (id ? `<dt>Book</dt><dd><a class="ul" href="book.html?item=${encodeURIComponent(id)}">Check availability &rarr;</a></dd>` : '');
     $('#zPlan').innerHTML = zonePlan(s, z);
     const img = $('#zPhoto'); img.src = z.ph || s.photo; img.alt = `${z.n}, ${s.name}`;
     $('#zCard').classList.remove('photo'); $('#zToggle').firstChild.nodeValue = 'View photo ';

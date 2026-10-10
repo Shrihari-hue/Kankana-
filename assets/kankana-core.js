@@ -24,7 +24,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmtDate = s => s ? P.parseISO(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
   const fmtDateTime = t => new Date(t).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const range = b => b.days > 1 ? `${fmtDate(b.startDate)} – ${fmtDate(P.addDays(b.startDate, b.days - 1))}` : fmtDate(b.startDate);
+  const range = b => P.describe(b).whenShort;
   const paidAmount = b => (b.payments || []).reduce((s, p) => s + p.amount, 0);
   const balanceDue = b => Math.max(0, (b.quote ? b.quote.total : 0) - paidAmount(b));
 
@@ -144,7 +144,8 @@
       if (sel.includes(ds)) cls.push('sel');
       const disabled = opts.mode === 'customer' && (past || st);
       const label = `${P.parseISO(ds).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}${st ? ' — ' + ({ booked: 'booked', hold: 'on hold', blocked: 'unavailable' }[st]) : past ? '' : ' — available'}`;
-      html += `<button type="button" class="${cls.join(' ')}" data-date="${ds}" ${disabled ? 'disabled' : ''} aria-label="${label}"><span>${d}</span>${dots ? `<em>${dots}</em>` : ''}</button>`;
+      const badge = opts.badges && opts.badges[ds] != null && !past ? `<small class="k-cal-badge">${esc(opts.badges[ds])}</small>` : '';
+      html += `<button type="button" class="${cls.join(' ')}" data-date="${ds}" ${disabled ? 'disabled' : ''} aria-label="${label}${badge ? ' · ' + esc(opts.badges[ds]) : ''}"><span>${d}</span>${dots ? `<em>${dots}</em>` : ''}${badge}</button>`;
     }
     el.innerHTML = html + '</div>';
     el.querySelectorAll('.k-cal-nav').forEach(b => b.onclick = () => {
@@ -168,6 +169,7 @@
   global.Kankana = {
     api, pay, docUrl, toast, renderCalendar, rangeFree,
     STATUSES: P.STATUSES, buildQuote: P.buildQuote, paidAmount, balanceDue,
-    util: { esc, fmtDate, fmtDateTime, range, inr: P.inr, iso: P.iso, parseISO: P.parseISO, addDays: P.addDays, eventDates: P.eventDates }
+    util: { esc, fmtDate, fmtDateTime, range, inr: P.inr, iso: P.iso, parseISO: P.parseISO, addDays: P.addDays, eventDates: P.eventDates,
+      describe: P.describe, kindOf: P.kindOf, fmtHour: P.fmtHour, findResource: P.findResource, lastDate: P.lastDate, occupiedDates: P.occupiedDates, slotUsage: P.slotUsage, slotHours: P.slotHours }
   };
 })(window);

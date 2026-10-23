@@ -204,8 +204,27 @@
   .fb .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
   .vt td input,.vt td select{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line-soft);background:#fffdf8;width:100%;min-width:80px;}
   .tpl-row.nolab .field > span{display:none;} .tpl-row .btn{height:38px;}
+  /* lead capture */
+  .cap-sec{border-top:1px solid var(--line-soft);margin-top:18px;padding-top:16px;}
+  .cap-sec h4{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:500;margin-bottom:8px;}
+  .cap-p{font-size:13.5px;line-height:1.65;color:var(--muted);margin-bottom:12px;max-width:860px;}
+  .cap-url{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#f1e7d4;padding:2px 6px;color:var(--ink);}
+  .cap-t td input,.cap-t td select{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line-soft);background:#fffdf8;width:100%;min-width:110px;}
+  .cap-t .x{border:1px solid var(--line);background:none;color:var(--red);width:30px;height:30px;cursor:pointer;vertical-align:middle;}
+  .cap-t td:first-child input{min-width:190px;} .cap-act{white-space:nowrap;text-align:right;}
+  @media(max-width:700px){.cap-t thead{display:none;} .cap-t,.cap-t tbody{display:block;} .cap-t tr{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-soft);}
+    .cap-t td{display:block;border:none !important;padding:0 !important;} .cap-t td:first-child,.cap-t td:nth-child(4),.cap-t .cap-act{grid-column:1/-1;} .cap-t td:first-child input{min-width:0;}
+    .cap-t td.r{text-align:left;font-size:12.5px;} .cap-t td.r::before{content:attr(data-l) ': ';color:var(--muted);} .cap-act{text-align:left;}}
+  .cap-steps summary{cursor:pointer;font-size:13px;color:var(--gold-deep);margin:4px 0;}
+  .cap-steps ol{margin:8px 0 0 20px;font-size:13.5px;line-height:1.7;max-width:860px;} .cap-steps li{margin-bottom:6px;}
   #printArea{display:none;}
-  @media print{body.printing > *:not(#printArea){display:none !important;} body.printing #printArea{display:block;padding:20px;font-family:Georgia,serif;color:#000;} #printArea h1{font-size:22px;margin-bottom:4px;} #printArea table{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:12px;} #printArea td,#printArea th{border-bottom:1px solid #ccc;padding:6px;text-align:left;}}
+  @media print{body.printing > *:not(#printArea){display:none !important;} body.printing #printArea{display:block;padding:20px;font-family:Georgia,serif;color:#000;} #printArea h1{font-size:22px;margin-bottom:4px;} #printArea table{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:12px;} #printArea td,#printArea th{border-bottom:1px solid #ccc;padding:6px;text-align:left;}
+    #printArea .qr-card{width:105mm;margin:10mm auto;padding:12mm 10mm;border:1px solid #c9a35c;text-align:center;color:#26080e;}
+    #printArea .qr-brand{font-family:Cinzel,Georgia,serif;font-size:26px;letter-spacing:.32em;padding-left:.32em;}
+    #printArea .qr-tag{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#8f6630;margin-top:4px;}
+    #printArea .qr-head{font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;margin-top:9mm;}
+    #printArea .qr-sub{font-size:12px;line-height:1.5;margin:3mm auto 6mm;max-width:80mm;}
+    #printArea .qr-code svg{width:60mm;height:60mm;} #printArea .qr-url{font-size:11px;margin-top:3mm;color:#555;}}
   @media(max-width:900px){.ev-card{grid-template-columns:56px minmax(0,1fr);}.ev-card .ev-prog{grid-column:1/-1;}
     .ck{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 28px;row-gap:6px;} .ck > :nth-child(1){grid-area:1/1;} .ck .tt{grid-area:1/2/2/4;} .ck > :last-child{grid-area:1/4;}
     .ck .c-due{grid-area:2/2;} .ck .c-own{grid-area:2/3;} .ck .c-ven{grid-area:3/2/4/4;}
@@ -566,6 +585,7 @@
             <div id="tm_pw" style="display:none;margin-top:14px"></div>
             <div id="roleHelp" class="muted" style="font-size:12px;margin-top:12px;line-height:1.7"></div>
           </div>
+          <div class="card owner-only" id="capCard" style="grid-column:1/-1"></div>
           <div class="card owner-only" id="autoCard" style="grid-column:1/-1"></div>
           <div class="card owner-only" id="tplCard" style="grid-column:1/-1"></div>
           <div class="card owner-only" id="evTplCard" style="grid-column:1/-1"></div>
@@ -607,5 +627,7 @@
 <script src="assets/admin-msg.js"></script>
 <script src="assets/admin-reports.js"></script>
 <script src="assets/admin-events.js"></script>
+<script src="assets/vendor/qrcode.js"></script>
+<script src="assets/admin-capture.js"></script>
 </body>
 </html>

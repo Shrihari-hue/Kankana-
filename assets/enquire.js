@@ -7,6 +7,7 @@
   f.addEventListener('submit', async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(f).entries());
+    if (window.kkAttribution) d.attribution = window.kkAttribution();
     f.querySelectorAll('.bad').forEach(x => x.classList.remove('bad'));
     const need = [];
     if (!String(d.name || '').trim()) need.push('name');

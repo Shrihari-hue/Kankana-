@@ -123,6 +123,14 @@ function createCrm(store) {
     store.setKV('crm', next);
     return next;
   }
+  /** Adds a lead source (e.g. "JustDial" from the email reader) to the list if it isn't there yet. */
+  function ensureSource(name) {
+    const n = clean(name, 40); if (!n) return;
+    const cur = lists(); if (cur.sources.some(x => x.toLowerCase() === n.toLowerCase())) return;
+    const at = cur.sources.indexOf('Other'), next = cur.sources.slice();
+    next.splice(at < 0 ? next.length : at, 0, n);
+    setLists({ sources: next });
+  }
 
   /* ---------------- team ---------------- */
   const teamRow = a => a && { id: a.id, name: a.name || '', email: a.email, role: ROLES[a.role] ? a.role : 'owner', active: a.active !== 0, createdAt: a.created_at };
@@ -171,7 +179,7 @@ function createCrm(store) {
     return {
       id: r.id, createdAt: r.created_at, updatedAt: r.updated_at, name: r.name, phone: r.phone || '', email: r.email || '', city: r.city || '',
       eventType: r.event_type || '', eventDate: r.event_date || '', guests: r.guests || null, budget: r.budget || null, source: r.source || '',
-      stage: r.stage, ownerId: r.owner_id || null, lostReason: r.lost_reason || '', message: d.message || '', interests: d.interests || [], tags: d.tags || []
+      stage: r.stage, ownerId: r.owner_id || null, lostReason: r.lost_reason || '', message: d.message || '', interests: d.interests || [], tags: d.tags || [], campaign: d.campaign || '', link: d.link || ''
     };
   }
   const getRow = id => db.prepare('SELECT * FROM leads WHERE id=?').get(String(id || '').toUpperCase());
@@ -225,13 +233,13 @@ function createCrm(store) {
     const now = Date.now();
     db.prepare(`INSERT INTO leads(id,created_at,updated_at,name,phone,phone_key,email,city,event_type,event_date,guests,budget,source,stage,owner_id,lost_reason,data)
       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id, now, now, f.name, f.phone || '', phoneKey(f.phone), f.email || '', f.city || '', f.eventType || '', f.eventDate || '',
-      f.guests || null, f.budget || null, f.source || 'Other', f.stage || 'new', f.ownerId || null, '', JSON.stringify({ message: f.message || '', tags: f.tags || [] }));
+      f.guests || null, f.budget || null, f.source || 'Other', f.stage || 'new', f.ownerId || null, '', JSON.stringify({ message: f.message || '', tags: f.tags || [], campaign: f.campaign || '', link: f.link || '' }));
     return id;
   }
   function writeLead(id, l) {
     db.prepare(`UPDATE leads SET updated_at=?,name=?,phone=?,phone_key=?,email=?,city=?,event_type=?,event_date=?,guests=?,budget=?,source=?,stage=?,owner_id=?,lost_reason=?,data=? WHERE id=?`)
       .run(Date.now(), l.name, l.phone, phoneKey(l.phone), l.email, l.city, l.eventType, l.eventDate, l.guests || null, l.budget || null, l.source, l.stage, l.ownerId || null, l.lostReason || '',
-        JSON.stringify({ message: l.message || '', tags: l.tags || [] }), id);
+        JSON.stringify({ message: l.message || '', tags: l.tags || [], interests: l.interests || [], campaign: l.campaign || '', link: l.link || '' }), id);
   }
   function act(leadId, kind, body, actorId, data) {
     db.prepare('INSERT INTO lead_activities(lead_id,at,actor_id,kind,body,data) VALUES(?,?,?,?,?,?)').run(leadId, Date.now(), actorId || null, kind, clean(body, 4000), data ? JSON.stringify(data) : null);
@@ -253,8 +261,11 @@ function createCrm(store) {
    * New enquiry from any channel. An open lead with the same phone or email is reused (merged),
    * so the same family enquiring twice doesn't appear twice.
    */
-  function createLead(input, { actor = null, source = null, channelNote = '' } = {}) {
+  function createLead(input, { actor = null, source = null, channelNote = '', campaign = '', link = '', channel = '' } = {}) {
     const f = sanitize(input);
+    if (campaign) f.campaign = clean(campaign, 80);
+    if (link) f.link = clean(link, 40);
+    const via = () => (f.campaign ? ` (${f.campaign})` : '');
     if (!f.name) throw bad('Please enter a name.');
     if (!f.phone && !f.email) throw bad('Add a phone number or an email address.');
     if (f.phone && !phoneKey(f.phone)) throw bad('That phone number doesn’t look right.');
@@ -268,13 +279,13 @@ function createCrm(store) {
         ['phone', 'email', 'city', 'eventType', 'eventDate', 'guests', 'budget'].forEach(k => { if (!merged[k] && f[k]) merged[k] = f[k]; });
         if (f.message) merged.message = [ex.message, f.message].filter(Boolean).join('\n\n— ').slice(0, 4000);
         writeLead(ex.id, merged);
-        act(ex.id, 'enquiry', `Enquired again via ${f.source}${f.message ? ': “' + f.message.slice(0, 300) + '”' : ''}${channelNote ? ' · ' + channelNote : ''}`, actorId);
+        act(ex.id, 'enquiry', `Enquired again via ${f.source}${via()}${f.message ? ': “' + f.message.slice(0, 300) + '”' : ''}${channelNote ? ' · ' + channelNote : ''}`, actorId);
         return { lead: getLead(ex.id), merged: true };
       }
       if (actor && roleOf(actor) === 'sales' && f.ownerId === undefined) f.ownerId = actor.id;
       const id = insertLead(f, actorId);
-      if (!actor) emitNew(id, f.source);
-      act(id, 'created', `Lead created from ${f.source}${actor ? ' by ' + (actor.name || actor.email) : ''}${f.message ? ': “' + f.message.slice(0, 300) + '”' : ''}${channelNote ? ' · ' + channelNote : ''}`, actorId);
+      if (!actor) emitNew(id, channel || f.source);   // channel 'Website' = an enquiry that gets the first-reply automations
+      act(id, 'created', `Lead created from ${f.source}${via()}${actor ? ' by ' + (actor.name || actor.email) : ''}${f.message ? ': “' + f.message.slice(0, 300) + '”' : ''}${channelNote ? ' · ' + channelNote : ''}`, actorId);
       if (f.ownerId) act(id, 'owner', `Assigned to ${nameOf(f.ownerId)}`, actorId);
       return { lead: getLead(id), merged: false };
     });
@@ -431,7 +442,7 @@ function createCrm(store) {
     db.prepare('INSERT OR IGNORE INTO lead_bookings(lead_id,booking_id) VALUES(?,?)').run(leadId, b.id);
   }
   /** Called after any booking is created. Celebrations and stays join the pipeline; turf/court/café reservations don't. */
-  function onBookingCreated(b, { leadId = null, actor = null } = {}) {
+  function onBookingCreated(b, { leadId = null, actor = null, attribution = null } = {}) {
     try {
       const k = kindOf(b);
       if (k === 'slot' && !leadId) return null;
@@ -440,8 +451,9 @@ function createCrm(store) {
       const what = `${b.venueName}${b.startDate ? ' · ' + b.startDate : ''}`;
       if (!lead) {
         const id = insertLead({ name: b.customer.name, phone: b.customer.phone, email: b.customer.email, city: b.customer.city, eventType: k === 'stay' ? 'Stay' : 'Wedding',
-          eventDate: b.startDate, guests: b.guests, source: b.source === 'website' ? 'Booking page' : 'Other', stage: 'new', ownerId: actor && roleOf(actor) === 'sales' ? actor.id : null }, actorId);
-        act(id, 'created', b.source === 'website' ? `Requested a quotation online for ${what}` : `Lead created from booking ${b.id}`, actorId);
+          eventDate: b.startDate, guests: b.guests, source: b.source === 'website' ? ((attribution && attribution.source) || 'Booking page') : 'Other', stage: 'new', ownerId: actor && roleOf(actor) === 'sales' ? actor.id : null,
+          campaign: attribution && attribution.campaign || '', link: attribution && attribution.link || '' }, actorId);
+        act(id, 'created', b.source === 'website' ? `Requested a quotation online for ${what}${attribution && attribution.source ? ` · came from ${attribution.source}${attribution.campaign ? ' (' + attribution.campaign + ')' : ''}` : ''}` : `Lead created from booking ${b.id}`, actorId);
         lead = rowToLead(getRow(id));
         if (b.source === 'website' && !backfilling) emitNew(id, 'Booking page');
       }
@@ -487,7 +499,7 @@ function createCrm(store) {
 
   return {
     STAGES, ROLES, TASK_KINDS, CrmError, roleOf, canSell, canEditLead,
-    lists, setLists, team, addMember, updateMember,
+    lists, setLists, ensureSource, team, addMember, updateMember,
     leadSummaries, getLead, createLead, updateLead, deleteLead, logActivity,
     listTasks, createTask, updateTask, deleteTask,
     onBookingCreated, onPayment, onStatus, leadsForBooking, linkBooking: (leadId, b) => linkBooking(leadId, b),

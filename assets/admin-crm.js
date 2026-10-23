@@ -184,6 +184,7 @@
     try { r = await K.api('GET', `/api/admin/leads/${encodeURIComponent(id)}`); } catch (e) { if (e.status === 401) return KA.showLogin(); return toast(e.message, 5000); }
     cur = r.lead; drawLead(cur, r.canEdit, o);
   }
+  KA.showDrawer = show; KA.newLeadDrawer = pre => newLeadDrawer(pre); KA.openLead = id => openLead(id);
   KA.reopenLead = id => { if ($('drawer').classList.contains('open') && cur && cur.id === id) openLead(id); };
   function drawLead(l, editable, o = {}) {
     const lists = S().crm;
@@ -194,7 +195,7 @@
       ? `<select id="ldOwner" class="k-input" style="width:auto;padding:7px 10px;font-size:13px"><option value="">Unassigned</option>${activeTeam().map(t => `<option value="${t.id}" ${t.id === l.ownerId ? 'selected' : ''}>${esc(t.name || t.email)}</option>`).join('')}</select>`
       : (l.ownerId ? esc(memberName(l.ownerId)) : (role() === 'sales' ? '<button class="btn sm" id="ldClaim" type="button">Assign to me</button>' : 'Unassigned'));
     show(`
-      <div class="dr-h"><div style="min-width:0"><div class="eyebrow">${esc(l.id)} · ${esc(l.source)} · ${new Date(l.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+      <div class="dr-h"><div style="min-width:0"><div class="eyebrow">${esc(l.id)} · ${esc(l.source)}${l.campaign ? ' · ' + esc(l.campaign) : ''} · ${new Date(l.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
         <h2>${esc(l.name)}</h2><div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${stagePill(l.stage)}<span class="muted" style="font-size:13px">Owner:</span> ${ownerCtl}</div></div>
         <button class="dr-x" id="drX" aria-label="Close">×</button></div>
       <div class="dr-b">
@@ -298,10 +299,11 @@
   }
 
   /* new lead */
-  function newLeadDrawer() {
+  function newLeadDrawer(pre) {
     const lists = S().crm;
-    show(`<div class="dr-h"><div><div class="eyebrow">Phone call, walk-in, Instagram…</div><h2>New lead</h2></div><button class="dr-x" id="drX" aria-label="Close">×</button></div>
+    show(`<div class="dr-h"><div><div class="eyebrow">${pre ? 'From an email' : 'Phone call, walk-in, Instagram…'}</div><h2>New lead</h2></div><button class="dr-x" id="drX" aria-label="Close">×</button></div>
       <div class="dr-b">
+        ${pre && pre._note ? `<div class="card" style="background:${pre._warn ? 'var(--amber-bg)' : 'var(--green-bg)'};border:none;padding:12px 16px;margin-bottom:14px;font-size:13px;line-height:1.55;color:${pre._warn ? 'var(--amber)' : 'var(--green)'}">${pre._note}</div>` : ''}
         <div class="grid2">
           <label class="field"><span>Name *</span><input id="nl_name" placeholder="Ananya Rao"></label>
           <label class="field"><span>Phone *</span><input id="nl_phone" placeholder="+91 98450 00000"></label>
@@ -323,6 +325,12 @@
         <button class="btn solid" id="nl_go" type="button" style="margin-top:6px">Save lead</button>
       </div>`);
     $('drX').onclick = KA.closeDrawer; $('nl_name').focus();
+    if (pre) {
+      const put = (id, v) => { const el = $(id); if (!el || v === undefined || v === null || v === '') return; if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === String(v))) el.add(new Option(v, v)); el.value = v; };
+      put('nl_name', pre.name); put('nl_phone', pre.phone); put('nl_email', pre.email); put('nl_city', pre.city); put('nl_type', pre.eventType); put('nl_date', pre.eventDate);
+      put('nl_guests', pre.guests); put('nl_budget', pre.budget); put('nl_source', pre.source); put('nl_msg', pre.message);
+      (pre._missing || []).forEach(id => { const el = $(id); if (el) el.style.borderColor = 'var(--amber)'; });
+    }
     $('nl_go').onclick = async () => {
       $('nl_err').textContent = '';
       const body = { name: $('nl_name').value, phone: $('nl_phone').value, email: $('nl_email').value, city: $('nl_city').value, eventType: $('nl_type').value,

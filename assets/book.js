@@ -316,6 +316,7 @@
   async function submit(withPayment) {
     if (busy) return;
     const data = collect(); if (!data) return;
+    if (window.kkAttribution) data.attribution = window.kkAttribution();
     busy = true; $('payBtn').disabled = $('holdBtn').disabled = true;
     let b;
     try {

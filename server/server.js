@@ -23,6 +23,7 @@ const { createCrm } = require('./lib/crm');
 const { createMessaging } = require('./lib/messages');
 const { createReports } = require('./lib/reports');
 const { createEvents } = require('./lib/events');
+const { createCapture } = require('./lib/capture');
 
 const PORT = +(process.env.PORT || 3000);
 const PROD = process.env.NODE_ENV === 'production';
@@ -45,6 +46,10 @@ hooks.onPayment = (b, pay, actor) => { crm.onPayment(b, pay, adminByActor(actor)
 // Automations: shortly after start, then every 5 minutes.
 setTimeout(() => msg.run(), 20000).unref();
 setInterval(() => msg.run(), 5 * 60000).unref();
+const capture = createCapture({ store, crm, mailer });
+// Leads mailbox (Gmail label): shortly after start, then every 5 minutes — only when IMAP_USER/IMAP_PASSWORD are set.
+setTimeout(() => capture.poll().catch(() => {}), 45000).unref();
+setInterval(() => capture.poll().catch(() => {}), 5 * 60000).unref();
 
 /* ---------------- env loader ---------------- */
 function loadEnv(file) {
@@ -205,7 +210,7 @@ route('POST', '/api/bookings', async (req, url, ctx) => {
   const body = await readJson(req);
   if (body.website) throw new HttpError(400, 'Rejected'); // honeypot
   const b = svc.createBooking(body, { source: 'website', status: 'quoted' });
-  crm.onBookingCreated(b, {});
+  crm.onBookingCreated(b, { attribution: capture.resolve(body.attribution) });
   return { booking: customerView(b) };
 });
 
@@ -405,9 +410,10 @@ route('POST', '/api/enquiries', async (req, url, ctx) => {
   if (limited('enq:' + ctx.ip, 6, 3600000)) throw new HttpError(429, 'Thank you — we already have your enquiry. Our team will be in touch shortly.');
   const b = await readJson(req);
   if (b.website) return { ok: true }; // honeypot: pretend success
+  const attr = capture.resolve(b.attribution);
   const { lead, merged } = crm.createLead({
     name: b.name, phone: b.phone, email: b.email, city: b.city, eventType: b.eventType, eventDate: b.eventDate, guests: b.guests, message: b.message
-  }, { source: 'Website' });
+  }, { source: (attr && attr.source) || 'Website', campaign: attr && attr.campaign || '', link: attr && attr.link || '', channelNote: attr ? 'through the website enquiry form' : '', channel: 'Website' });
   const s = store.settings();
   const to = (s.company && s.company.email) || process.env.ADMIN_EMAIL;
   if (mailer.configured() && to) {
@@ -416,6 +422,21 @@ route('POST', '/api/enquiries', async (req, url, ctx) => {
       .catch(e => console.error('[enquiry email]', e.message));
   }
   return { ok: true };
+});
+
+/* ---------------- CRM: automatic lead capture ---------------- */
+route('GET', '/api/admin/capture', () => capture.overview(), { admin: true, roles: ['owner'] });
+route('POST', '/api/admin/lead-links', async (req) => ({ link: capture.saveLink(await readJson(req)) }), { admin: true, roles: ['owner'] });
+route('PUT', '/api/admin/lead-links/:key', async (req, url, ctx, p) => ({ link: capture.saveLink(await readJson(req), p.key) }), { admin: true, roles: ['owner'] });
+route('DELETE', '/api/admin/lead-links/:key', (req, url, ctx, p) => ({ ok: capture.deleteLink(p.key) }), { admin: true, roles: ['owner'] });
+route('POST', '/api/admin/lead-mail/preview', async (req) => ({ parsed: capture.preview((await readJson(req)).text) }), { admin: true, roles: ['owner', 'sales'] });
+route('POST', '/api/admin/lead-mail/check', async () => ({ mailbox: await capture.poll(), emails: capture.recent(40) }), { admin: true, roles: ['owner'] });
+route('POST', '/api/admin/capture/hook-key', () => ({ hookKey: capture.hookKey(true) }), { admin: true, roles: ['owner'] });
+// Other apps (Pabbly, Make, Zapier, inbound-email services) post leads here.
+route('POST', '/api/hooks/lead/:key', async (req, url, ctx, p) => {
+  if (limited('hook:' + ctx.ip, 120, 3600000)) throw new HttpError(429, 'Too many requests.');
+  if (!capture.keyOk(p.key)) throw new HttpError(404, 'Not found');
+  return capture.webhook(await readJson(req));
 });
 
 /* ---------------- CRM: leads, activities, follow-ups ---------------- */
@@ -531,6 +552,9 @@ const server = http.createServer(async (req, res) => {
   const pathname = decodeURIComponent(url.pathname);
   if (!pathname.startsWith('/api/')) {
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405); return res.end(); }
+    // Tagged links & QR codes: /go/instagram → count the scan, open the enquiry form with the source remembered.
+    const go = pathname.match(/^\/go\/([\w-]{1,40})\/?$/);
+    if (go) { let to = '/'; try { to = capture.redirectFor(go[1]); } catch (e) { console.error('[go]', e.message); } res.writeHead(302, { Location: to, 'Cache-Control': 'no-store' }); return res.end(); }
     return serveStatic(req, res, pathname);
   }
   const ctx = { ip: clientIp(req), res };

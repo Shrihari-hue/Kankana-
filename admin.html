@@ -122,7 +122,53 @@
   .ok-dot{background:var(--green);} .warn-dot{background:#c98a1e;}
   .mail .st{font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:2px 8px;margin-left:8px;}
   .loading-app{padding:80px;text-align:center;color:var(--muted);}
-  @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.two,.qb,.cal-wrap,.set-grid{grid-template-columns:minmax(0,1fr);}.preview{position:static;}}
+  /* CRM */
+  .seg{display:inline-flex;border:1px solid var(--line);}
+  .seg button{background:none;border:none;font:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:9px 14px;cursor:pointer;color:var(--muted);}
+  .seg button.on{background:var(--ink);color:var(--cream);}
+  .board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(206px,1fr);gap:12px;overflow-x:auto;padding-bottom:12px;align-items:start;}
+  .col{background:#efe4cf;min-height:120px;display:flex;flex-direction:column;}
+  .col-h{padding:12px 12px 10px;display:flex;justify-content:space-between;gap:8px;align-items:baseline;border-top:3px solid var(--line);}
+  .col-h b{font-weight:500;font-size:12px;letter-spacing:.12em;text-transform:uppercase;}
+  .col-h span{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .col.won .col-h{border-top-color:var(--green);} .col.lost .col-h{border-top-color:var(--red);}
+  .col-b{padding:0 8px 10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:60px;}
+  .col.drop{outline:2px dashed var(--gold);outline-offset:-4px;}
+  .lc{background:var(--paper);border:1px solid var(--line-soft);padding:11px 12px;cursor:pointer;font-size:13px;line-height:1.45;}
+  .lc:hover{border-color:var(--gold);}
+  .lc.dragging{opacity:.4;}
+  .lc .nm{font-weight:500;font-size:14px;display:flex;justify-content:space-between;gap:8px;}
+  .lc .meta{color:var(--muted);font-size:12px;}
+  .lc .foot{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11px;color:var(--muted);align-items:center;}
+  .lc .due{color:var(--gold-deep);} .lc .due.late{color:var(--red);font-weight:500;}
+  .av{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--cream);font-size:9.5px;letter-spacing:.04em;flex:none;}
+  .av.none{background:transparent;border:1px dashed var(--line);color:var(--muted);}
+  .src{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .stages{display:flex;flex-wrap:wrap;gap:6px;}
+  .stages button{font:inherit;font-size:11px;letter-spacing:.08em;padding:7px 10px;border:1px solid var(--line);background:#fffdf8;cursor:pointer;color:var(--ink);}
+  .stages button.on{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+  .stages button.won.on{background:var(--green);border-color:var(--green);} .stages button.lost.on{background:var(--red);border-color:var(--red);}
+  .stages button[disabled]{cursor:default;opacity:.55;}
+  .quick{display:flex;gap:8px;flex-wrap:wrap;}
+  .quick a,.quick button{font:inherit;font-size:12px;letter-spacing:.06em;padding:9px 12px;border:1px solid var(--line);background:#fffdf8;color:var(--ink);text-decoration:none;cursor:pointer;}
+  .quick a:hover,.quick button:hover{border-color:var(--gold);}
+  .quick .wa{border-color:#2f6b45;color:#2f6b45;}
+  .log-box textarea{width:100%;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);background:var(--paper);min-height:70px;resize:vertical;}
+  .acts{list-style:none;margin:0;padding:0;}
+  .acts li{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px;line-height:1.5;}
+  .acts .ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:#ece3d2;}
+  .acts .ic.call,.acts .ic.whatsapp,.acts .ic.email{background:var(--blue-bg);} .acts .ic.visit{background:var(--amber-bg);} .acts .ic.payment,.acts .ic.booking{background:var(--green-bg);} .acts .ic.stage{background:#e6dcf0;}
+  .acts .t{font-size:11px;color:var(--muted);}
+  .task{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px;}
+  .task input[type=checkbox]{width:18px;height:18px;accent-color:var(--ink);margin-top:2px;}
+  .task .w{font-size:12px;color:var(--muted);}
+  .task .w.late{color:var(--red);}
+  .task.done .tt{text-decoration:line-through;color:var(--muted);}
+  .tgrp{margin-bottom:22px;} .tgrp > h4{font-family:'Cinzel',serif;font-weight:400;font-size:11px;letter-spacing:.2em;color:var(--gold);margin-bottom:4px;}
+  .tgrp.late > h4{color:var(--red);}
+  .tgrp .card{padding:6px 20px;}
+  .owner-only[hidden]{display:none !important;}
+  @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.grid3{grid-template-columns:minmax(0,1fr);}.two,.qb,.cal-wrap,.set-grid{grid-template-columns:minmax(0,1fr);}.preview{position:static;}}
   @media(max-width:760px){
     #app{grid-template-columns:minmax(0,1fr);}
     .side{position:fixed;left:0;top:0;bottom:0;width:250px;z-index:300;transform:translateX(-100%);transition:transform .3s;}
@@ -160,6 +206,8 @@
     <div class="brand"><div class="nm">Kankana</div><div class="eyebrow">Studio Admin</div></div>
     <nav id="tabs">
       <button data-tab="overview" class="on">Overview</button>
+      <button data-tab="leads">Leads <em id="lCount"></em></button>
+      <button data-tab="tasks">Follow-ups <em id="tCount"></em></button>
       <button data-tab="bookings">Bookings <em id="bCount"></em></button>
       <button data-tab="calendar">Calendar</button>
       <button data-tab="quote">Quotation Generator</button>
@@ -172,6 +220,7 @@
     <div class="foot">
       <a href="index.html" target="_blank">View website ↗</a>
       <a href="book.html" target="_blank">Customer booking page ↗</a>
+      <div id="whoami" style="color:var(--sand);font-size:11px;letter-spacing:.08em"></div>
       <button id="logout">Sign out</button>
     </div>
   </aside>
@@ -189,6 +238,33 @@
           <div class="card"><h3>Coming up</h3><div id="upcoming" style="margin-top:10px;overflow-x:auto"></div></div>
           <div class="card"><h3>Recent activity</h3><ul class="k-timeline" id="activity" style="margin-top:16px"></ul></div>
         </div>
+        <div class="two" style="margin-top:20px">
+          <div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h3>Your follow-ups</h3><a href="#tasks" data-go="tasks" class="muted" style="font-size:12px">All follow-ups →</a></div><div id="ovTasks" style="margin-top:10px"></div></div>
+          <div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h3>New leads</h3><a href="#leads" data-go="leads" class="muted" style="font-size:12px">Pipeline →</a></div><div id="ovLeads" style="margin-top:10px"></div></div>
+        </div>
+      </section>
+
+      <!-- LEADS (CRM) -->
+      <section class="tab" id="t-leads">
+        <div class="main-h"><div><div class="eyebrow">Sales pipeline</div><h1>Leads</h1></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><div class="seg" id="lView"><button data-v="board" class="on">Board</button><button data-v="list">List</button></div><button class="btn sm solid" id="lNew">New lead</button></div></div>
+        <div class="kpis" id="lKpis"></div>
+        <div class="filters">
+          <input class="k-input grow" id="lSearch" placeholder="Search name, phone, email or lead ID">
+          <select class="k-input" id="lOwner"></select>
+          <select class="k-input" id="lSource"><option value="">All sources</option></select>
+          <select class="k-input" id="lClosed"><option value="30">Won / lost: last 30 days</option><option value="9999">Won / lost: all time</option><option value="0">Hide won / lost</option></select>
+        </div>
+        <div id="lBoard" class="board"></div>
+        <div id="lList" class="tbl-wrap" style="display:none"><table class="t" id="lTable"></table></div>
+      </section>
+
+      <!-- FOLLOW-UPS (CRM) -->
+      <section class="tab" id="t-tasks">
+        <div class="main-h"><div><div class="eyebrow">Never let a lead go cold</div><h1>Follow-ups</h1></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><div class="seg" id="tWho"><button data-v="me" class="on">Mine</button><button data-v="all">Everyone</button></div><button class="btn sm solid" id="tNew">New follow-up</button></div></div>
+        <div id="tAdd" class="card" style="display:none;margin-bottom:20px"></div>
+        <div id="tGroups"></div>
       </section>
 
       <!-- BOOKINGS -->
@@ -318,10 +394,10 @@
       <!-- SETTINGS -->
       <section class="tab" id="t-settings">
         <div class="main-h"><div><div class="eyebrow">Configuration</div><h1>Settings</h1></div>
-          <button class="btn sm solid" id="s_save" type="button">Save settings</button></div>
-        <div class="card" id="sysStatus"></div>
+          <button class="btn sm solid owner-only" id="s_save" type="button">Save settings</button></div>
+        <div class="card owner-only" id="sysStatus"></div>
         <form id="setForm" class="set-grid" onsubmit="return false;" style="margin-top:20px">
-          <div class="card">
+          <div class="card owner-only">
             <h3>Booking rules</h3>
             <div class="grid3" style="margin-top:12px">
               <label class="field"><span>Default GST %</span><input id="s_gst" type="number" min="0" max="28"></label>
@@ -337,7 +413,7 @@
               <input id="s_room" type="hidden">
             </div>
           </div>
-          <div class="card">
+          <div class="card owner-only">
             <h3>Company details on documents</h3>
             <div class="grid2" style="margin-top:12px">
               <label class="field"><span>Brand name</span><input id="s_cname"></label>
@@ -349,11 +425,33 @@
               <label class="field" style="grid-column:1/-1"><span>Address</span><input id="s_caddr"></label>
             </div>
           </div>
-          <div class="card">
+          <div class="card owner-only">
             <h3>Quotation terms</h3>
             <label class="field" style="margin-top:12px"><span>Celebrations · one term per line</span><textarea id="s_terms" rows="5"></textarea></label>
             <label class="field" style="margin-top:12px"><span>Stays</span><textarea id="s_sterms" rows="3"></textarea></label>
             <label class="field" style="margin-top:12px"><span>Reservations (turf, court, café)</span><textarea id="s_lterms" rows="3"></textarea></label>
+          </div>
+          <div class="card owner-only" id="teamCard" style="grid-column:1/-1">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h3>Team logins</h3><span class="muted" style="font-size:12px">Each person signs in with their own email. Roles decide what they can change.</span></div>
+            <div class="tbl-wrap" style="margin-top:14px"><table class="t" id="teamTable"></table></div>
+            <div class="row" style="margin-top:14px">
+              <label class="field"><span>Name</span><input id="tm_name" placeholder="Priya Sharma"></label>
+              <label class="field" style="flex:1.4"><span>Email</span><input id="tm_email" type="email" placeholder="priya@kankana.in"></label>
+              <label class="field"><span>Role</span><select id="tm_role"></select></label>
+              <button class="btn sm solid" id="tm_add" type="button">Add login</button>
+            </div>
+            <div id="tm_pw" style="display:none;margin-top:14px"></div>
+            <div id="roleHelp" class="muted" style="font-size:12px;margin-top:12px;line-height:1.7"></div>
+          </div>
+          <div class="card owner-only" id="listsCard">
+            <h3>CRM lists</h3>
+            <p class="muted" style="font-size:12px;margin-top:4px">One per line. These fill the dropdowns on every lead.</p>
+            <div class="grid3" style="margin-top:12px">
+              <label class="field"><span>Lead sources</span><textarea id="cl_sources" rows="8"></textarea></label>
+              <label class="field"><span>Event types</span><textarea id="cl_types" rows="8"></textarea></label>
+              <label class="field"><span>Lost reasons</span><textarea id="cl_lost" rows="8"></textarea></label>
+            </div>
+            <button class="btn sm" id="cl_save" type="button" style="margin-top:12px">Save lists</button>
           </div>
           <div class="card">
             <h3>Your account</h3>
@@ -363,8 +461,8 @@
             </div>
             <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
               <button class="btn sm" id="pw_save" type="button">Change password</button>
-              <a class="btn sm" href="/api/admin/export.csv">Export bookings (CSV)</a>
-              <a class="btn sm" href="/api/admin/backup">Download full backup</a>
+              <a class="btn sm" id="expCsv" href="/api/admin/export.csv">Export bookings (CSV)</a>
+              <a class="btn sm owner-only" href="/api/admin/backup">Download full backup</a>
             </div>
           </div>
         </form>
@@ -379,5 +477,6 @@
 <script src="assets/kankana-pricing.js"></script>
 <script src="assets/kankana-core.js"></script>
 <script src="assets/admin.js"></script>
+<script src="assets/admin-crm.js"></script>
 </body>
 </html>

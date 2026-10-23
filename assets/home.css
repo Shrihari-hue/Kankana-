@@ -837,3 +837,24 @@ section[data-theme="sky"]{color:var(--sky-ink);transition:color .6s ease}
   .g2 .es-card{flex-basis:86%}
   .es-m b{opacity:1;transform:none}
 }
+
+/* ---------- ENQUIRY FORM (feeds the CRM) ---------- */
+.enq{width:min(760px,100%);margin:48px auto 0;text-align:left}
+.enq-h{text-align:center;margin-bottom:18px;letter-spacing:.3em}
+.enq-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 16px}
+.enq-grid label{display:flex;flex-direction:column;gap:7px}
+.enq-grid label.wide{grid-column:1/-1}
+.enq-grid span{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;opacity:.6}
+.enq-grid input,.enq-grid select,.enq-grid textarea{font:inherit;font-size:15px;color:var(--cream);background:rgba(246,236,216,.06);border:1px solid rgba(246,236,216,.22);padding:12px 14px;border-radius:0;outline:none;width:100%;transition:border-color .3s,background .3s}
+.enq-grid select option{color:#1d1210}
+.enq-grid input:focus,.enq-grid select:focus,.enq-grid textarea:focus{border-color:var(--gold-light);background:rgba(246,236,216,.1)}
+.enq-grid input::placeholder,.enq-grid textarea::placeholder{color:rgba(246,236,216,.35)}
+.enq-grid .bad{border-color:#e08a8a}
+.enq-grid .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.enq-f{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:20px;flex-wrap:wrap}
+.enq-f button[disabled]{opacity:.6;cursor:wait}
+.enq-msg{font-size:13.5px;min-height:1.2em;margin:0}
+.enq-msg.ok{color:var(--gold-light)} .enq-msg.err{color:#f0a3a3}
+.enq.sent .enq-grid,.enq.sent .enq-f button{display:none}
+.enq.sent .enq-msg{font-family:var(--serif);font-size:26px;text-align:center}
+@media (max-width:760px){.enq-grid{grid-template-columns:minmax(0,1fr)}.enq{margin-top:34px}}

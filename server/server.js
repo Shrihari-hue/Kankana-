@@ -19,6 +19,7 @@ const DB = require('./lib/db');
 const rzp = require('./lib/razorpay');
 const mailer = require('./lib/mailer');
 const { createService, HttpError } = require('./lib/service');
+const { createCrm } = require('./lib/crm');
 
 const PORT = +(process.env.PORT || 3000);
 const PROD = process.env.NODE_ENV === 'production';
@@ -28,7 +29,12 @@ const SESSION_TTL = 12 * 3600 * 1000;
 const scrypt = promisify(crypto.scrypt);
 
 const store = DB.open(DATA_DIR);
-const svc = createService(store, { defaultUrl: `http://localhost:${PORT}` });
+const hooks = {};
+const svc = createService(store, { defaultUrl: `http://localhost:${PORT}`, hooks });
+const crm = createCrm(store);
+const adminByActor = a => (a && typeof a === 'object') ? a : (a ? store.adminByEmail(a) : null);
+hooks.onPayment = (b, pay, actor) => crm.onPayment(b, pay, adminByActor(actor));
+hooks.onStatus = (b, status, actor) => crm.onStatus(b, status, adminByActor(actor));
 
 /* ---------------- env loader ---------------- */
 function loadEnv(file) {
@@ -56,7 +62,7 @@ async function checkPw(pw, stored) {
   if (!email) email = 'admin@kankana.local';
   let generated = false;
   if (!pw) { pw = crypto.randomBytes(9).toString('base64url'); generated = true; }
-  store.createAdmin(email, 'Admin', await hashPw(pw));
+  store.createAdmin(email, 'Admin', await hashPw(pw)); // first login is an owner (role defaults to owner)
   console.log(`\n  Admin account created: ${email}${generated ? `\n  Temporary password:     ${pw}\n  (change it in Admin → Settings)` : ''}\n`);
 })();
 
@@ -189,6 +195,7 @@ route('POST', '/api/bookings', async (req, url, ctx) => {
   const body = await readJson(req);
   if (body.website) throw new HttpError(400, 'Rejected'); // honeypot
   const b = svc.createBooking(body, { source: 'website', status: 'quoted' });
+  crm.onBookingCreated(b, {});
   return { booking: customerView(b) };
 });
 
@@ -253,49 +260,55 @@ route('POST', '/api/admin/login', async (req, url, ctx) => {
   const a = store.adminByEmail(email);
   const ok = a ? await checkPw(password || '', a.pw_hash) : (await hashPw('x'), false);
   if (!ok) throw new HttpError(401, 'Incorrect email or password.');
+  if (a.active === 0) throw new HttpError(403, 'This login has been turned off. Ask an owner to turn it back on.');
   ctx.res.__cookie = store.createSession(a.id, SESSION_TTL);
-  return { ok: true, admin: { email: a.email, name: a.name } };
+  return { ok: true, admin: { email: a.email, name: a.name, role: crm.roleOf(a) } };
 });
 route('POST', '/api/admin/logout', (req, url, ctx) => { store.deleteSession(cookies(req)[COOKIE]); ctx.res.__cookie = ''; return { ok: true }; });
-route('GET', '/api/admin/me', (req, url, ctx) => ({ admin: { email: ctx.admin.email, name: ctx.admin.name } }), { admin: true });
+route('GET', '/api/admin/me', (req, url, ctx) => ({ admin: { id: ctx.admin.id, email: ctx.admin.email, name: ctx.admin.name, role: crm.roleOf(ctx.admin) } }), { admin: true });
 
 route('GET', '/api/admin/state', (req, url, ctx) => ({
   bookings: store.allBookings(), blocked: store.blockedAll(), catalog: store.catalog(), settings: store.settings(),
   emails: store.recentEmails(200), today: P.todayIST(),
+  me: { id: ctx.admin.id, email: ctx.admin.email, name: ctx.admin.name || '', role: crm.roleOf(ctx.admin) },
+  team: crm.team().map(t => crm.roleOf(ctx.admin) === 'owner' ? t : { id: t.id, name: t.name, role: t.role, active: t.active }),
+  leads: crm.leadSummaries(), tasks: crm.listTasks(), crm: Object.assign({ stages: crm.STAGES, roles: crm.ROLES }, crm.lists()),
   system: { payments: rzp.mode(), email: mailer.configured(), webhook: !!process.env.RAZORPAY_WEBHOOK_SECRET, siteUrl: process.env.SITE_URL || null, admin: ctx.admin.email }
 }), { admin: true });
 
 route('POST', '/api/admin/bookings', async (req, url, ctx) => {
   const body = await readJson(req);
   const status = body.status === 'enquiry' ? 'enquiry' : 'quoted';
-  return { booking: svc.createBooking(body, { source: 'admin', status, actor: ctx.admin.email, silent: status === 'enquiry' }) };
-}, { admin: true });
+  const b = svc.createBooking(body, { source: 'admin', status, actor: ctx.admin.email, silent: status === 'enquiry' });
+  const leadId = crm.onBookingCreated(b, { leadId: body.leadId || null, actor: ctx.admin });
+  return { booking: b, leadId };
+}, { admin: true, roles: ['owner', 'sales'] });
 route('PUT', '/api/admin/bookings/:id', async (req, url, ctx, p) => {
   const body = await readJson(req);
   let b = svc.updateBooking(p.id, body, ctx.admin.email);
   if (['enquiry', 'cancelled'].includes(b.status) && body.sendQuote) b = svc.setStatus(b.id, 'quoted', 'Quotation sent to client', ctx.admin.email, { email: false });
   return { booking: b };
-}, { admin: true });
+}, { admin: true, roles: ['owner', 'sales'] });
 route('POST', '/api/admin/bookings/:id/status', async (req, url, ctx, p) => {
   const { status, note, notify } = await readJson(req);
   return { booking: svc.setStatus(p.id, status, note, ctx.admin.email, { email: notify !== false }) };
-}, { admin: true });
+}, { admin: true, roles: ['owner', 'sales', 'events'] });
 route('POST', '/api/admin/bookings/:id/payments', async (req, url, ctx, p) => {
   const { amount, method, ref } = await readJson(req);
   const b = store.getBooking(p.id); if (!b) throw new HttpError(404, 'Booking not found');
   const due = b.quote.total - b.payments.reduce((s, x) => s + x.amount, 0);
   if (+amount > due) throw new HttpError(400, `Amount is more than the balance due (${P.inr(due)}).`);
   return svc.recordPayment(p.id, { amount, method, ref }, ctx.admin.email);
-}, { admin: true });
+}, { admin: true, roles: ['owner', 'accounts'] });
 route('POST', '/api/admin/bookings/:id/resend', async (req, url, ctx, p) => {
   const { kind } = await readJson(req);
   svc.resendEmail(p.id, kind); return { ok: true };
-}, { admin: true });
+}, { admin: true, roles: ['owner', 'sales', 'accounts'] });
 route('POST', '/api/admin/blocked', async (req) => {
   const { venueId, date, reason } = await readJson(req);
   if (!P.findResource(store.catalog(), venueId) || !P.isISODate(date)) throw new HttpError(400, 'Invalid date or venue');
   return { blocked: store.toggleBlock(venueId, date, String(reason || '').slice(0, 120)) };
-}, { admin: true });
+}, { admin: true, roles: ['owner', 'sales', 'events'] });
 /* Live availability check for the admin quotation builder (same rules as saving). */
 route('POST', '/api/admin/check', async (req) => {
   const b = await readJson(req);
@@ -307,7 +320,7 @@ route('POST', '/api/admin/check', async (req) => {
   };
   if (!P.findResource(store.catalog(), sel.venueId)) return { reason: 'Choose what is being booked.' };
   return { reason: store.checkFree(sel, b.ignoreId ? String(b.ignoreId) : null) };
-}, { admin: true });
+}, { admin: true, roles: ['owner', 'sales'] });
 route('PUT', '/api/admin/settings', async (req) => {
   const b = await readJson(req); const s = store.settings();
   const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
@@ -321,7 +334,7 @@ route('PUT', '/api/admin/settings', async (req) => {
   ['terms', 'stayTerms', 'slotTerms'].forEach(k => { if (Array.isArray(b[k])) next[k] = b[k].map(t => String(t).slice(0, 400)).filter(Boolean).slice(0, 12); });
   store.setKV('settings', next);
   return { settings: store.settings() };
-}, { admin: true });
+}, { admin: true, roles: ['owner'] });
 route('PUT', '/api/admin/catalog', async (req) => {
   const b = await readJson(req);
   const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
@@ -346,7 +359,7 @@ route('PUT', '/api/admin/catalog', async (req) => {
   if (dup) throw new HttpError(400, `Two items share the name/id "${dup}". Give each venue, stay and reservation a different name.`);
   store.setKV('catalog', cat);
   return { catalog: cat };
-}, { admin: true });
+}, { admin: true, roles: ['owner'] });
 route('POST', '/api/admin/password', async (req, url, ctx) => {
   const { current, next } = await readJson(req);
   if (!(await checkPw(current || '', ctx.admin.pw_hash))) throw new HttpError(400, 'Current password is incorrect.');
@@ -359,13 +372,13 @@ route('POST', '/api/admin/test-email', async (req, url, ctx) => {
   const { to } = await readJson(req);
   await mailer.send({ to: to || ctx.admin.email, subject: 'Kankana test email', text: 'Email delivery is working.', html: '<p>Email delivery is working. ✦ Kankana</p>' });
   return { ok: true };
-}, { admin: true });
+}, { admin: true, roles: ['owner'] });
 route('GET', '/api/admin/export.csv', () => {
   const cols = ['Booking ID', 'Created', 'Status', 'Type', 'Client', 'Email', 'Phone', 'City', 'Booked', 'When', 'Start', 'Days/Nights', 'Guests', 'Details', 'Total', 'Paid', 'Balance', 'Quotation', 'Invoice'];
   const rows = store.allBookings().map(b => { const paid = b.payments.reduce((s, p) => s + p.amount, 0), ds = P.describe(b); return [b.id, new Date(b.createdAt).toISOString(), P.STATUSES[b.status].label, ds.label, b.customer.name, b.customer.email, b.customer.phone, b.customer.city, b.venueName, ds.when, b.startDate, b.days, b.guests, [ds.people].concat(ds.extras).join(' · '), b.quote.total, paid, b.quote.total - paid, b.quoteNo, b.invoiceNo || '']; });
   const csv = [cols, ...rows].map(r => r.map(x => { let s = String(x == null ? '' : x); if (/^[=+\-@]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; }).join(',')).join('\r\n');
   return { __raw: true, type: 'text/csv; charset=utf-8', body: '﻿' + csv, headers: { 'Content-Disposition': 'attachment; filename="kankana-bookings.csv"' } };
-}, { admin: true });
+}, { admin: true, roles: ['owner', 'accounts'] });
 
 route('GET', '/api/admin/backup', () => {
   const tmp = path.join(DATA_DIR, `backup-${Date.now()}.db`);
@@ -373,7 +386,56 @@ route('GET', '/api/admin/backup', () => {
   const buf = fs.readFileSync(tmp); fs.unlinkSync(tmp);
   const stamp = P.todayIST();
   return { __raw: true, type: 'application/octet-stream', body: buf, headers: { 'Content-Disposition': `attachment; filename="kankana-backup-${stamp}.db"` } };
+}, { admin: true, roles: ['owner'] });
+
+/* ---------------- CRM: website enquiries ---------------- */
+route('POST', '/api/enquiries', async (req, url, ctx) => {
+  if (limited('enq:' + ctx.ip, 6, 3600000)) throw new HttpError(429, 'Thank you — we already have your enquiry. Our team will be in touch shortly.');
+  const b = await readJson(req);
+  if (b.website) return { ok: true }; // honeypot: pretend success
+  const { lead, merged } = crm.createLead({
+    name: b.name, phone: b.phone, email: b.email, city: b.city, eventType: b.eventType, eventDate: b.eventDate, guests: b.guests, message: b.message
+  }, { source: 'Website' });
+  const s = store.settings();
+  const to = (s.company && s.company.email) || process.env.ADMIN_EMAIL;
+  if (mailer.configured() && to) {
+    const lines = [`Name: ${lead.name}`, `Phone: ${lead.phone}`, `Email: ${lead.email}`, `Event: ${lead.eventType || '—'} · ${lead.eventDate || 'date open'} · ${lead.guests || '?'} guests`, '', lead.message || ''];
+    mailer.send({ to, subject: `${merged ? 'Repeat enquiry' : 'New enquiry'} — ${lead.name} (${lead.id})`, text: lines.join('\n'), html: lines.map(l => `<div>${String(l).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</div>`).join('') })
+      .catch(e => console.error('[enquiry email]', e.message));
+  }
+  return { ok: true };
+});
+
+/* ---------------- CRM: leads, activities, follow-ups ---------------- */
+route('GET', '/api/admin/leads/:id', (req, url, ctx, p) => {
+  const l = crm.getLead(p.id); if (!l) throw new HttpError(404, 'Lead not found');
+  return { lead: l, canEdit: crm.canEditLead(ctx.admin, l) };
 }, { admin: true });
+route('POST', '/api/admin/leads', async (req, url, ctx) => {
+  const b = await readJson(req);
+  return crm.createLead(b, { actor: ctx.admin, source: b.source || 'Other' });
+}, { admin: true, roles: ['owner', 'sales'] });
+route('PUT', '/api/admin/leads/:id', async (req, url, ctx, p) => ({ lead: crm.updateLead(p.id, await readJson(req), ctx.admin) }), { admin: true, roles: ['owner', 'sales'] });
+route('DELETE', '/api/admin/leads/:id', (req, url, ctx, p) => ({ ok: crm.deleteLead(p.id, ctx.admin) }), { admin: true, roles: ['owner'] });
+route('POST', '/api/admin/leads/:id/activity', async (req, url, ctx, p) => ({ lead: crm.logActivity(p.id, await readJson(req), ctx.admin) }), { admin: true });
+route('POST', '/api/admin/tasks', async (req, url, ctx) => ({ task: crm.createTask(await readJson(req), ctx.admin) }), { admin: true });
+route('PUT', '/api/admin/tasks/:id', async (req, url, ctx, p) => ({ task: crm.updateTask(p.id, await readJson(req), ctx.admin) }), { admin: true });
+route('DELETE', '/api/admin/tasks/:id', (req, url, ctx, p) => ({ ok: crm.deleteTask(p.id, ctx.admin) }), { admin: true });
+route('PUT', '/api/admin/crm-lists', async (req) => ({ lists: crm.setLists(await readJson(req)) }), { admin: true, roles: ['owner'] });
+
+/* ---------------- team logins ---------------- */
+const tempPassword = () => crypto.randomBytes(9).toString('base64url');
+route('POST', '/api/admin/team', async (req) => {
+  const b = await readJson(req); const pw = tempPassword();
+  return { member: crm.addMember(b, await hashPw(pw)), tempPassword: pw };
+}, { admin: true, roles: ['owner'] });
+route('PUT', '/api/admin/team/:id', async (req, url, ctx, p) => ({ member: crm.updateMember(p.id, await readJson(req), ctx.admin) }), { admin: true, roles: ['owner'] });
+route('POST', '/api/admin/team/:id/reset', async (req, url, ctx, p) => {
+  const a = store.adminById(+p.id); if (!a) throw new HttpError(404, 'Team member not found');
+  if (a.id === ctx.admin.id) throw new HttpError(400, 'Change your own password under Your account.');
+  const pw = tempPassword(); store.setAdminPassword(a.id, await hashPw(pw));
+  return { tempPassword: pw };
+}, { admin: true, roles: ['owner'] });
 
 /* ---------------- static files ---------------- */
 const STATIC_OK = p => /^\/[\w.-]+\.html$/.test(p) || /^\/assets\/[\w./-]+$/.test(p) || p === '/favicon.ico' || p === '/robots.txt';
@@ -419,7 +481,8 @@ const server = http.createServer(async (req, res) => {
     const params = {}; const m = pathname.match(r.re); r.keys.forEach((k, i) => { params[k] = m[i + 1]; });
     if (r.o.admin || pathname.startsWith('/api/admin/') && pathname !== '/api/admin/login') {
       ctx.admin = adminFrom(req);
-      if (!ctx.admin) throw new HttpError(401, 'Please sign in.');
+      if (!ctx.admin || ctx.admin.active === 0) throw new HttpError(401, 'Please sign in.');
+      if (r.o.roles && !r.o.roles.includes(crm.roleOf(ctx.admin))) throw new HttpError(403, `Your role (${crm.ROLES[crm.roleOf(ctx.admin)].label}) can’t do this. Ask an owner.`);
     }
     // CSRF: state-changing admin calls must carry our custom header (blocked cross-site without CORS).
     if (req.method !== 'GET' && pathname.startsWith('/api/admin/') && req.headers['x-kankana'] !== '1') throw new HttpError(403, 'Forbidden');

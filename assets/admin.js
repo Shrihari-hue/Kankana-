@@ -64,8 +64,11 @@
   $('logout').onclick = async () => { try { await K.api('POST', '/api/admin/logout', {}); } catch (e) {} location.reload(); };
 
   /* ------------------------------------------------ navigation */
-  const TABS = ['overview', 'bookings', 'calendar', 'quote', 'customers', 'payments', 'outbox', 'catalog', 'settings'];
+  const TABS = ['overview', 'leads', 'tasks', 'bookings', 'calendar', 'quote', 'customers', 'payments', 'outbox', 'catalog', 'settings'];
+  const EXT = {}, AFTER = [];   // tab renderers and after-render hooks added by admin-crm.js
   function go(t) {
+    const nb = document.querySelector(`#tabs button[data-tab="${t}"]`);
+    if (!nb || nb.hidden) t = 'overview';
     tab = t;
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
     document.querySelectorAll('.tab').forEach(s => s.classList.toggle('on', s.id === 't-' + t));
@@ -80,7 +83,9 @@
   function render() {
     if (!S) return;
     $('bCount').textContent = S.bookings.filter(b => ['enquiry', 'quoted'].includes(b.status)).length || '';
-    ({ overview: rOverview, bookings: rBookings, calendar: rCalendar, quote: qPreview, customers: rCustomers, payments: rPayments, outbox: rOutbox, catalog: rCatalog, settings: rSettings })[tab]();
+    const fn = EXT[tab] || ({ overview: rOverview, bookings: rBookings, calendar: rCalendar, quote: qPreview, customers: rCustomers, payments: rPayments, outbox: rOutbox, catalog: rCatalog, settings: rSettings })[tab];
+    if (fn) fn();
+    AFTER.forEach(h => { try { h(tab); } catch (e) { console.error(e); } });
   }
 
   /* ------------------------------------------------ overview */
@@ -171,7 +176,8 @@
           <dt>Phone</dt><dd><a href="tel:${U.esc(b.customer.phone)}">${U.esc(b.customer.phone)}</a> · <a href="https://wa.me/${U.esc(b.customer.phone.replace(/\D/g, ''))}" target="_blank" rel="noopener">WhatsApp</a></dd>
           <dt>City</dt><dd>${U.esc([b.customer.city, b.customer.state].filter(Boolean).join(', ') || '—')}</dd>
           ${b.customer.gstin ? `<dt>GSTIN</dt><dd>${U.esc(b.customer.gstin)}</dd>` : ''}
-          <dt>Source</dt><dd>${b.source === 'admin' ? 'Created by team' : 'Website'}</dd></dl></div>
+          <dt>Source</dt><dd>${b.source === 'admin' ? 'Created by team' : 'Website'}</dd>
+          ${(S.leads || []).filter(l => (l.bookingIds || []).includes(b.id)).map(l => `<dt>Lead</dt><dd><a href="#" data-lead="${U.esc(l.id)}" style="color:var(--gold-deep)">${U.esc(l.id)} · ${U.esc(l.name)} →</a></dd>`).join('')}</dl></div>
         <div class="dr-sec"><h4>${D.label}</h4><dl class="kv">
           <dt>${D.resourceLabel}</dt><dd>${U.esc(bName(b))}</dd><dt>When</dt><dd>${U.esc(D.when)}</dd>
           <dt>Guests</dt><dd>${U.esc(D.people)}</dd>
@@ -279,7 +285,7 @@
   }
 
   /* ------------------------------------------------ quotation generator */
-  let editingId = null, customLines = [];
+  let editingId = null, customLines = [], quoteLead = null;
   function drawLines() {
     $('q_lines').innerHTML = customLines.map((l, i) => `<div class="cl-row" data-i="${i}">
       <input class="k-input" data-k="desc" value="${U.esc(l.desc)}" placeholder="e.g. Fireworks display">
@@ -381,7 +387,7 @@
       </div>`;
   }
   function resetQuote() {
-    editingId = null; customLines = [];
+    editingId = null; customLines = []; quoteLead = null; if ($('q_leadNote')) $('q_leadNote').remove();
     ['q_name', 'q_email', 'q_phone', 'q_city', 'q_state', 'q_gstin', 'q_date', 'q_notes'].forEach(id => $(id).value = '');
     $('q_kind').value = 'event'; qKindChanged(false);
     $('q_venue').selectedIndex = 0; qItemChanged(); $('q_days').selectedIndex = 0; $('q_guests').value = 150; $('q_pkg').selectedIndex = 0; $('q_discount').value = 0;
@@ -411,6 +417,17 @@
     $('qbTitle').textContent = `Edit ${b.id}`; $('q_save').textContent = 'Update & email revised quotation'; $('q_enquiry').style.display = 'none';
     drawLines(); qPreview();
   }
+  /** Opens the quotation builder pre-filled from a CRM lead; saving links the booking to that lead. */
+  function quoteForLead(l) {
+    resetQuote(); quoteLead = l.id;
+    $('q_name').value = l.name || ''; $('q_email').value = l.email || ''; $('q_phone').value = l.phone || ''; $('q_city').value = l.city || '';
+    const k = l.eventType === 'Stay' ? 'stay' : 'event';
+    $('q_kind').value = k; qKindChanged(false);
+    if (l.guests) $('q_guests').value = l.guests;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(l.eventDate || '')) $('q_date').value = l.eventDate;
+    $('qbTitle').insertAdjacentHTML('afterend', `<div id="q_leadNote" class="muted" style="font-size:13px;margin-top:6px">For lead ${U.esc(l.id)} · ${U.esc(l.name)}${l.eventDate && !/^\d{4}-/.test(l.eventDate) ? ' · wants ' + U.esc(l.eventDate) : ''}</div>`);
+    drawLines(); qPreview(); go('quote');
+  }
   $('qbReset').onclick = resetQuote;
   $('q_save').onclick = async () => {
     const d = qData(); $('q_err').textContent = '';
@@ -420,7 +437,7 @@
     try {
       const r = editingId
         ? await K.api('PUT', `/api/admin/bookings/${editingId}`, Object.assign(d, { sendQuote: true }))
-        : await K.api('POST', '/api/admin/bookings', Object.assign(d, { status: 'quoted' }));
+        : await K.api('POST', '/api/admin/bookings', Object.assign(d, { status: 'quoted', leadId: quoteLead }));
       await reload();
       toast(`${r.booking.quoteNo} saved & emailed to ${r.booking.customer.email}`);
       resetQuote(); go('bookings'); openDrawer(r.booking.id);
@@ -431,7 +448,7 @@
     const d = qData(); $('q_err').textContent = '';
     if (!d.startDate) d.startDate = S.today;
     if (d.kind === 'slot' && d.startHour == null) d.startHour = qItem() ? qItem().open : 9;
-    try { const r = await K.api('POST', '/api/admin/bookings', Object.assign(d, { status: 'enquiry' })); await reload(); toast(`Enquiry ${r.booking.id} saved`); resetQuote(); go('bookings'); }
+    try { const r = await K.api('POST', '/api/admin/bookings', Object.assign(d, { status: 'enquiry', leadId: quoteLead })); await reload(); toast(`Enquiry ${r.booking.id} saved`); resetQuote(); go('bookings'); }
     catch (e) { if (e.status === 401) return showLogin(); $('q_err').textContent = e.message; }
   };
 
@@ -552,16 +569,23 @@
   }), 'Settings saved').then(fillVenueSelects).catch(() => {});
   $('pw_save').onclick = () => act(() => K.api('POST', '/api/admin/password', { current: $('pw_cur').value, next: $('pw_new').value }), 'Password changed').then(() => { $('pw_cur').value = $('pw_new').value = ''; }).catch(() => {});
 
+  /* ------------------------------------------------ extension API (used by admin-crm.js) */
+  window.KA = {
+    get S() { return S; }, get tab() { return tab; }, K, U, $, pill, toast, act, reload, render, go, openDrawer, closeDrawer, showLogin, quoteForLead,
+    addTab(name, fn) { EXT[name] = fn; }, afterRender(fn) { AFTER.push(fn); }, onBoot: []
+  };
+
   /* ------------------------------------------------ boot */
   async function boot() {
     try { await reload(); }
     catch (e) { if (e.status === 401) return showLogin(); $('login').style.display = 'flex'; $('pwErr').textContent = e.message; return; }
     $('login').style.display = 'none'; $('app').style.display = 'grid';
+    window.KA.onBoot.forEach(f => { try { f(); } catch (e) { console.error(e); } });
     fillVenueSelects(); resetQuote();
     const h = location.hash.slice(1);
     go(TABS.includes(h) ? h : 'overview');
   }
   $('login').style.display = 'none';
-  boot();
+  setTimeout(boot, 0);   // let admin-crm.js register first
   setInterval(() => { if (S && document.visibilityState === 'visible' && !$('drawer').classList.contains('open') && tab !== 'quote' && tab !== 'catalog' && tab !== 'settings') reload().then(render).catch(() => {}); }, 60000);
 })();

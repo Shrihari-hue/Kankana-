@@ -608,6 +608,20 @@
       <a class="ul" href="book.html">Check dates <b>&#8599;</b></a>
       <a class="ul" href="my-booking.html">Track your booking <b>&#8599;</b></a>
     </div>
+    <form class="enq fade" id="enquire" style="--d:.35s" novalidate>
+      <div class="enq-h cap sm gl">Send an enquiry · we reply within a day</div>
+      <div class="enq-grid">
+        <label><span>Your name</span><input name="name" autocomplete="name" required maxlength="120"></label>
+        <label><span>Phone / WhatsApp</span><input name="phone" type="tel" autocomplete="tel" required maxlength="30" placeholder="+91"></label>
+        <label><span>Email</span><input name="email" type="email" autocomplete="email" maxlength="200"></label>
+        <label><span>Occasion</span><select name="eventType"><option>Wedding</option><option>Reception</option><option>Engagement</option><option>Mehndi / Sangeet</option><option>Corporate</option><option>Birthday / Party</option><option>Stay</option><option>Other</option></select></label>
+        <label><span>Dates (roughly)</span><input name="eventDate" maxlength="40" placeholder="e.g. February 2027"></label>
+        <label><span>Guests</span><input name="guests" type="number" min="1" max="20000" inputmode="numeric"></label>
+        <label class="wide"><span>Tell us about it</span><textarea name="message" rows="3" maxlength="2000" placeholder="Number of days, rooms, the feel you have in mind…"></textarea></label>
+        <label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+      </div>
+      <div class="enq-f"><button class="pill solid" type="submit"><i>&#10022;</i>Send enquiry</button><p class="enq-msg" role="status" aria-live="polite"></p></div>
+    </form>
     <div class="ct-info fade" style="--d:.4s"><a href="mailto:hello@kankana.in">hello@kankana.in</a><a href="tel:+919000000000">+91 90000 00000</a></div>
     <div class="ct-small cap sm fade" style="--d:.5s">Kankana &middot; Weddings &amp; Resorts &middot; Bengaluru</div>
   </div>
@@ -699,5 +713,6 @@
 </script>
 <script src="assets/lenis.min.js"></script>
 <script src="assets/home.js"></script>
+<script src="assets/enquire.js"></script>
 </body>
 </html>

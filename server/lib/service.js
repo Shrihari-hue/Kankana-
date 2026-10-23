@@ -11,6 +11,9 @@ const bad = m => new HttpError(400, m);
 
 function createService(store, opts) {
   const siteUrl = () => (process.env.SITE_URL || opts.defaultUrl).replace(/\/$/, '');
+  // Optional listeners (the CRM): onPayment(booking, payment, actor), onStatus(booking, status, actor). Never allowed to break a booking.
+  const hooks = opts.hooks || {};
+  const fire = (name, ...a) => { try { if (hooks[name]) hooks[name](...a); } catch (e) { console.error(`[hook ${name}]`, e.message); } };
   const inr = P.inr;
 
   /* ---------------- validation ---------------- */
@@ -136,6 +139,7 @@ function createService(store, opts) {
       return store.getBooking(cur.id, { withKey: true });
     });
     if (email) notify(b, 'status', null, { note: clean(note, 500) });
+    fire('onStatus', b, status, actor);
     return b;
   }
 
@@ -168,7 +172,7 @@ function createService(store, opts) {
       const fresh = store.getBooking(b.id, { withKey: true });
       return { booking: fresh, payment: fresh.payments.find(x => x.id === pay.id) };
     });
-    if (out.payment) notify(out.booking, 'receipt', out.payment, { bccAdmin: true });
+    if (out.payment) { notify(out.booking, 'receipt', out.payment, { bccAdmin: true }); fire('onPayment', out.booking, out.payment, actor); }
     return out;
   }
 

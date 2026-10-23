@@ -168,6 +168,26 @@
   .tgrp.late > h4{color:var(--red);}
   .tgrp .card{padding:6px 20px;}
   .owner-only[hidden]{display:none !important;}
+  .msg-box textarea{width:100%;font:inherit;font-size:14px;line-height:1.6;padding:10px 12px;border:1px solid var(--line);background:var(--paper);min-height:150px;resize:vertical;}
+  .msg-box .k-input{padding:9px 12px;font-size:14px;}
+  .msg-note{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+  .task .wa-btn{font:inherit;font-size:11px;letter-spacing:.08em;padding:5px 9px;border:1px solid #2f6b45;color:#2f6b45;background:#fffdf8;cursor:pointer;margin-top:6px;}
+  .task .wa-btn:hover{background:var(--green-bg);}
+  .task .peek{font-size:12px;color:var(--muted);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:640px;}
+  .task .auto{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);margin-left:6px;}
+  .auto-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 28px;margin-top:14px;}
+  .auto-row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line-soft);font-size:14px;line-height:1.5;}
+  .auto-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--ink);margin-top:2px;flex:none;}
+  .auto-row .d{font-size:12px;color:var(--muted);}
+  .auto-row input[type=number],.auto-row input[type=text]{width:64px;font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);background:#fffdf8;}
+  .auto-log{font-size:13px;max-height:260px;overflow:auto;margin-top:8px;}
+  .auto-log div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft);}
+  .tpl{border:1px solid var(--line-soft);background:#fffdf8;padding:14px 16px;margin-top:12px;}
+  .tpl .row .field input{font-size:14px;padding:9px 11px;}
+  .tpl textarea{width:100%;font:inherit;font-size:13.5px;line-height:1.55;padding:10px 12px;border:1px solid var(--line);background:var(--paper);min-height:120px;margin-top:8px;}
+  .ph{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .ph button{font:inherit;font-size:11.5px;padding:4px 8px;border:1px dashed var(--line);background:none;cursor:pointer;color:var(--gold-deep);}
+  @media(max-width:760px){.auto-grid{grid-template-columns:minmax(0,1fr);}}
   @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.grid3{grid-template-columns:minmax(0,1fr);}.two,.qb,.cal-wrap,.set-grid{grid-template-columns:minmax(0,1fr);}.preview{position:static;}}
   @media(max-width:760px){
     #app{grid-template-columns:minmax(0,1fr);}
@@ -443,6 +463,8 @@
             <div id="tm_pw" style="display:none;margin-top:14px"></div>
             <div id="roleHelp" class="muted" style="font-size:12px;margin-top:12px;line-height:1.7"></div>
           </div>
+          <div class="card owner-only" id="autoCard" style="grid-column:1/-1"></div>
+          <div class="card owner-only" id="tplCard" style="grid-column:1/-1"></div>
           <div class="card owner-only" id="listsCard">
             <h3>CRM lists</h3>
             <p class="muted" style="font-size:12px;margin-top:4px">One per line. These fill the dropdowns on every lead.</p>
@@ -478,5 +500,6 @@
 <script src="assets/kankana-core.js"></script>
 <script src="assets/admin.js"></script>
 <script src="assets/admin-crm.js"></script>
+<script src="assets/admin-msg.js"></script>
 </body>
 </html>

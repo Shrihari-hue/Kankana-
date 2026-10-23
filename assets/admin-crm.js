@@ -184,13 +184,12 @@
     try { r = await K.api('GET', `/api/admin/leads/${encodeURIComponent(id)}`); } catch (e) { if (e.status === 401) return KA.showLogin(); return toast(e.message, 5000); }
     cur = r.lead; drawLead(cur, r.canEdit, o);
   }
+  KA.reopenLead = id => { if ($('drawer').classList.contains('open') && cur && cur.id === id) openLead(id); };
   function drawLead(l, editable, o = {}) {
     const lists = S().crm;
     const books = (l.bookingIds || []).map(id => S().bookings.find(b => b.id === id)).filter(Boolean);
     const openTasks = l.tasks.filter(t => !t.doneAt);
     const tel = l.phone ? `tel:${esc(l.phone.replace(/[^\d+]/g, ''))}` : '';
-    const waText = `Hello ${firstName(l.name)}, this is ${firstName(me().name) || 'the team'} from Kankana — Weddings & Resorts. Thank you for your enquiry${l.eventType ? ' about your ' + l.eventType.toLowerCase() : ''}. When would be a good time to talk?`;
-    const wa = l.phone ? `https://wa.me/${waNumber(l.phone)}?text=${encodeURIComponent(waText)}` : '';
     const ownerCtl = isOwner()
       ? `<select id="ldOwner" class="k-input" style="width:auto;padding:7px 10px;font-size:13px"><option value="">Unassigned</option>${activeTeam().map(t => `<option value="${t.id}" ${t.id === l.ownerId ? 'selected' : ''}>${esc(t.name || t.email)}</option>`).join('')}</select>`
       : (l.ownerId ? esc(memberName(l.ownerId)) : (role() === 'sales' ? '<button class="btn sm" id="ldClaim" type="button">Assign to me</button>' : 'Unassigned'));
@@ -201,10 +200,12 @@
       <div class="dr-b">
         <div class="dr-sec"><div class="quick">
           ${tel ? `<a href="${tel}" id="qCall">☎ Call ${esc(l.phone)}</a>` : ''}
-          ${wa ? `<a href="${esc(wa)}" target="_blank" rel="noopener" class="wa" id="qWa">◉ WhatsApp</a>` : ''}
+          ${l.phone ? '<button type="button" class="wa" id="qWa">◉ WhatsApp</button>' : ''}
           ${l.email ? `<a href="mailto:${esc(l.email)}">@ Email</a>` : ''}
           ${canSell() && l.stage !== 'lost' ? '<button type="button" id="qQuote">₹ Create quotation</button>' : ''}
         </div></div>
+
+        <div class="dr-sec" id="ldMsg"></div>
 
         <div class="dr-sec"><h4>Stage</h4>
           <div class="stages">${stages().map(s => `<button type="button" data-st="${s.id}" class="${s.id} ${s.id === l.stage ? 'on' : ''}" ${editable ? '' : 'disabled'}>${esc(s.label)}</button>`).join('')}</div>
@@ -261,7 +262,9 @@
   function wireLead(l, editable) {
     $('drX').onclick = KA.closeDrawer;
     const q = $('qQuote'); if (q) q.onclick = () => { KA.closeDrawer(); KA.quoteForLead(l); };
-    const wa = $('qWa'); if (wa) wa.addEventListener('click', () => { const t = $('lgText'); if (t && !t.value) { t.value = 'Sent WhatsApp message.'; } });
+    const wa = $('qWa'); if (wa) wa.onclick = () => { const box = $('ldMsg'); box.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('mgText').focus(); };
+    const pick = l.stage === 'new' ? 'first_reply' : l.stage === 'visit_booked' ? 'visit_confirm' : l.stage === 'quoted' || l.stage === 'negotiating' ? 'quote_followup' : l.stage === 'won' ? 'thanks' : l.stage === 'lost' ? 'keep_in_touch' : 'no_response';
+    if (KA.msgPanel) KA.msgPanel($('ldMsg'), { lead: l }, pick);
     const ow = $('ldOwner'); if (ow) ow.onchange = () => put(l, { ownerId: ow.value ? +ow.value : null }, ow.value ? `Assigned to ${memberName(+ow.value)}` : 'Unassigned');
     const cl = $('ldClaim'); if (cl) cl.onclick = () => put(l, { ownerId: me().id }, 'Assigned to you');
     document.querySelectorAll('.stages [data-st]').forEach(b => b.onclick = () => {
@@ -337,17 +340,23 @@
   }
 
   /* ------------------------------------------------ follow-ups */
-  const KIND_TAG = { call: 'Call', visit: 'Site visit', follow_up: 'Follow-up', other: 'To-do' };
+  const KIND_TAG = { call: 'Call', visit: 'Site visit', follow_up: 'Follow-up', whatsapp: 'WhatsApp', other: 'To-do' };
   function taskRow(t) {
     const l = t.leadId ? S().leads.find(x => x.id === t.leadId) : null;
     return `<div class="task ${t.doneAt ? 'done' : ''}" data-task="${t.id}">
       <input type="checkbox" data-done="${t.id}" ${t.doneAt ? 'checked' : ''} aria-label="Mark done">
-      <div><div class="tt">${esc(t.title)} <span class="src" style="margin-left:4px">${KIND_TAG[t.kind] || ''}</span></div>
-        ${l ? `<a href="#" data-lead="${esc(l.id)}" class="w" style="color:var(--gold-deep)">${esc(l.name)}${l.phone ? ' · ' + esc(l.phone) : ''}</a>` : ''}</div>
+      <div><div class="tt">${esc(t.title)} <span class="src" style="margin-left:4px">${KIND_TAG[t.kind] || ''}</span>${t.auto ? '<span class="auto">automatic</span>' : ''}</div>
+        ${l ? `<a href="#" data-lead="${esc(l.id)}" class="w" style="color:var(--gold-deep)">${esc(l.name)}${l.phone ? ' · ' + esc(l.phone) : ''}</a>` : ''}
+        ${t.kind === 'whatsapp' && t.message && !t.doneAt ? `<div class="peek">${esc(t.message.replace(/\s+/g, ' '))}</div><button type="button" class="wa-btn" data-wa="${t.id}">◉ Send on WhatsApp</button>` : ''}</div>
       <div style="text-align:right"><div class="w ${!t.doneAt && isLate(t.dueAt) ? 'late' : ''}">${t.doneAt ? 'Done ' + esc(whenStr(t.doneAt)) : esc(whenStr(t.dueAt))}</div>
         <div class="w">${esc(t.assignee || '')}${!t.doneAt ? ` · <a href="#" data-snooze="${t.id}" style="color:inherit">+1 day</a>` : ''}</div></div></div>`;
   }
   function wireTasks(root, after) {
+    root.querySelectorAll('[data-wa]').forEach(btn => btn.onclick = () => {
+      const t = S().tasks.find(x => x.id === +btn.dataset.wa); if (!t) return;
+      window.open(KA.waLink(t.phone, t.message), '_blank', 'noopener');
+      call(() => K.api('PUT', `/api/admin/tasks/${t.id}`, { done: true, sent: true }), 'Marked as sent').then(async () => { await refresh(); if (after) await after(); }).catch(() => {});
+    });
     root.querySelectorAll('[data-done]').forEach(c => c.onchange = () => {
       call(() => K.api('PUT', `/api/admin/tasks/${c.dataset.done}`, { done: c.checked }), c.checked ? 'Done ✓' : 'Reopened').then(async () => { await refresh(); if (after) await after(); }).catch(() => { c.checked = !c.checked; });
     });

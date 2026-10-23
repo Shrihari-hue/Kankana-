@@ -20,6 +20,7 @@ const rzp = require('./lib/razorpay');
 const mailer = require('./lib/mailer');
 const { createService, HttpError } = require('./lib/service');
 const { createCrm } = require('./lib/crm');
+const { createMessaging } = require('./lib/messages');
 
 const PORT = +(process.env.PORT || 3000);
 const PROD = process.env.NODE_ENV === 'production';
@@ -35,6 +36,10 @@ const crm = createCrm(store);
 const adminByActor = a => (a && typeof a === 'object') ? a : (a ? store.adminByEmail(a) : null);
 hooks.onPayment = (b, pay, actor) => crm.onPayment(b, pay, adminByActor(actor));
 hooks.onStatus = (b, status, actor) => crm.onStatus(b, status, adminByActor(actor));
+const msg = createMessaging({ store, crm, svc, mailer });
+// Automations: shortly after start, then every 5 minutes.
+setTimeout(() => msg.run(), 20000).unref();
+setInterval(() => msg.run(), 5 * 60000).unref();
 
 /* ---------------- env loader ---------------- */
 function loadEnv(file) {
@@ -273,6 +278,8 @@ route('GET', '/api/admin/state', (req, url, ctx) => ({
   me: { id: ctx.admin.id, email: ctx.admin.email, name: ctx.admin.name || '', role: crm.roleOf(ctx.admin) },
   team: crm.team().map(t => crm.roleOf(ctx.admin) === 'owner' ? t : { id: t.id, name: t.name, role: t.role, active: t.active }),
   leads: crm.leadSummaries(), tasks: crm.listTasks(), crm: Object.assign({ stages: crm.STAGES, roles: crm.ROLES }, crm.lists()),
+  messaging: Object.assign({ templates: msg.templates(), placeholders: msg.PLACEHOLDERS, emailOn: msg.emailOn() },
+    crm.roleOf(ctx.admin) === 'owner' ? { auto: msg.autoSettings(), log: msg.recentLog(40), lastRun: msg.lastRun() } : {}),
   system: { payments: rzp.mode(), email: mailer.configured(), webhook: !!process.env.RAZORPAY_WEBHOOK_SECRET, siteUrl: process.env.SITE_URL || null, admin: ctx.admin.email }
 }), { admin: true });
 
@@ -422,6 +429,18 @@ route('POST', '/api/admin/tasks', async (req, url, ctx) => ({ task: crm.createTa
 route('PUT', '/api/admin/tasks/:id', async (req, url, ctx, p) => ({ task: crm.updateTask(p.id, await readJson(req), ctx.admin) }), { admin: true });
 route('DELETE', '/api/admin/tasks/:id', (req, url, ctx, p) => ({ ok: crm.deleteTask(p.id, ctx.admin) }), { admin: true });
 route('PUT', '/api/admin/crm-lists', async (req) => ({ lists: crm.setLists(await readJson(req)) }), { admin: true, roles: ['owner'] });
+
+/* ---------------- messages & automations ---------------- */
+route('POST', '/api/admin/messages/preview', async (req, url, ctx) => {
+  const { templateId, leadId, bookingId } = await readJson(req);
+  const lead = leadId ? crm.rawLead(leadId) : null;
+  const booking = bookingId ? store.getBooking(bookingId, { withKey: true }) : (lead ? msg.latestBooking(lead.id) : null);
+  return msg.render(templateId, { lead, booking, actor: ctx.admin });
+}, { admin: true });
+route('POST', '/api/admin/messages/send', async (req, url, ctx) => msg.send(await readJson(req), ctx.admin), { admin: true });
+route('PUT', '/api/admin/templates', async (req) => ({ templates: msg.setTemplates((await readJson(req)).templates) }), { admin: true, roles: ['owner'] });
+route('PUT', '/api/admin/automations', async (req) => ({ auto: msg.setAuto(await readJson(req)) }), { admin: true, roles: ['owner'] });
+route('POST', '/api/admin/automations/run', () => msg.run(), { admin: true, roles: ['owner'] });
 
 /* ---------------- team logins ---------------- */
 const tempPassword = () => crypto.randomBytes(9).toString('base64url');

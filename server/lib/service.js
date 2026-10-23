@@ -251,14 +251,14 @@ function createService(store, opts) {
 <tr><td style="padding:30px">
 <div style="font-family:Georgia,serif;font-size:24px;line-height:1.3;margin-bottom:14px">${esc(heading)}</div>
 ${paras.map(p => `<p style="font-size:15px;line-height:1.7;margin:0 0 14px;color:#3d2429">${p}</p>`).join('')}
-<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:18px 0;border-top:1px solid #eadfca;border-bottom:1px solid #eadfca;font-size:14px">
+${b ? `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:18px 0;border-top:1px solid #eadfca;border-bottom:1px solid #eadfca;font-size:14px">
 <tr><td style="padding:10px 0;color:#8a7378">Booking</td><td style="padding:10px 0;text-align:right"><b>${esc(b.id)}</b></td></tr>
 <tr><td style="padding:10px 0;color:#8a7378">${esc(P.describe(b).resourceLabel)}</td><td style="padding:10px 0;text-align:right">${esc(b.venueName || b.venueId)}</td></tr>
 <tr><td style="padding:10px 0;color:#8a7378">When</td><td style="padding:10px 0;text-align:right">${esc(P.describe(b).when)}</td></tr>
 <tr><td style="padding:10px 0;color:#8a7378">Guests</td><td style="padding:10px 0;text-align:right">${esc(P.describe(b).people)}</td></tr>
 <tr><td style="padding:10px 0;color:#8a7378">Total</td><td style="padding:10px 0;text-align:right">${esc(inr(b.quote.total))}</td></tr>
 <tr><td style="padding:10px 0;color:#8a7378">Paid</td><td style="padding:10px 0;text-align:right">${esc(inr(b.payments.reduce((s, p) => s + p.amount, 0)))}</td></tr>
-</table>
+</table>` : ''}
 ${cta ? `<div style="text-align:center;margin:26px 0 8px"><a href="${cta.url}" style="display:inline-block;background:#26080e;color:#f6ecd8;text-decoration:none;padding:14px 28px;font-size:12px;letter-spacing:3px">${esc(cta.label.toUpperCase())}</a></div>` : ''}
 </td></tr>
 <tr><td style="padding:18px 30px;background:#f8f1e4;font-size:12px;color:#8a7378;line-height:1.6">${esc(C.name)} · ${esc(C.address)}<br>${esc(C.email)} · ${esc(C.phone)}</td></tr>
@@ -309,6 +309,32 @@ ${cta ? `<div style="text-align:center;margin:26px 0 8px"><a href="${cta.url}" s
     });
   }
 
+  /**
+   * A message the team (or an automation) writes from a template: plain text in, branded email out.
+   * Logged in the outbox against the booking and/or the CRM lead. Resolves to { id, status }.
+   */
+  function sendCustom({ to, subject, text, bookingId = null, leadId = null }) {
+    to = clean(to, 200).toLowerCase();
+    if (!EMAIL_RE.test(to)) throw bad('This client has no valid email address.');
+    subject = clean(subject, 200) || 'A message from Kankana';
+    text = String(text || '').replace(/\r/g, '').slice(0, 8000).trim();
+    if (!text) throw bad('The message is empty.');
+    const b = bookingId ? store.getBooking(bookingId, { withKey: true }) : null;
+    const link = u => `<a href="${u}" style="color:#8f6630">${u}</a>`;
+    const paras = text.split(/\n{2,}/).map(p => escT(p).replace(/https?:\/\/[^\s<]+/g, link).replace(/\n/g, '<br>'));
+    const html = emailHtml(b, subject, paras, b ? { url: trackUrl(b), label: 'View booking' } : null);
+    const id = 'MSG-' + crypto.randomBytes(6).toString('hex');
+    const status = mailer.configured() ? 'sending' : 'not_configured';
+    store.logEmail({ id, to, bookingId: b ? b.id : null, leadId, subject, body: text, attachments: [], status });
+    if (mailer.configured()) {
+      setImmediate(async () => {
+        try { await mailer.send({ to, subject, text, html, replyTo: store.settings().company.email || undefined }); store.setEmailStatus(id, 'sent'); }
+        catch (e) { console.error('[email] send failed:', e.message); store.setEmailStatus(id, 'failed', e.message.slice(0, 300)); }
+      });
+    }
+    return { id, status };
+  }
+
   function resendEmail(bookingId, kind) {
     const b = store.getBooking(bookingId, { withKey: true });
     if (!b) throw new HttpError(404, 'Booking not found');
@@ -317,7 +343,7 @@ ${cta ? `<div style="text-align:center;margin:26px 0 8px"><a href="${cta.url}" s
     return true;
   }
 
-  return { HttpError, validate, createBooking, updateBooking, setStatus, recordPayment, createOrder, completeOnlinePayment, handleWebhook, renderPdf, resendEmail, paymentKind, trackUrl };
+  return { HttpError, validate, createBooking, updateBooking, setStatus, recordPayment, createOrder, completeOnlinePayment, handleWebhook, renderPdf, resendEmail, paymentKind, trackUrl, sendCustom, siteUrl };
 }
 
 module.exports = { createService, HttpError };

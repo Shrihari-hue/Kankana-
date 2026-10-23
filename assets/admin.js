@@ -198,6 +198,7 @@
             <button class="btn sm solid" id="dPay">Record</button>
           </div>` : ''}
         </div>
+        <div class="dr-sec" id="dMsg"></div>
         <div class="dr-sec"><h4>Documents &amp; emails</h4>
           <div class="row">
             <a class="btn sm" href="${K.docUrl('quotation', b)}" target="_blank">Quotation PDF</a>
@@ -212,6 +213,7 @@
       </div>`;
     $('drawer').classList.add('open'); $('drawerBg').classList.add('open');
     $('drX').onclick = closeDrawer;
+    (window.KA.onBookingDrawer || []).forEach(f => { try { f(b); } catch (e) { console.error(e); } });
     $('dStatusSave').onclick = () => act(() => K.api('POST', `/api/admin/bookings/${b.id}/status`, { status: $('dStatus').value, note: $('dNote').value.trim(), notify: $('dNotify').checked }), 'Status updated').then(() => openDrawer(b.id)).catch(() => {});
     const dp = $('dPay');
     if (dp) dp.onclick = () => {
@@ -493,7 +495,7 @@
   function rOutbox() {
     const tone = { sent: 'green', failed: 'red', sending: 'amber', not_configured: 'neutral' };
     $('outbox').innerHTML = S.emails.map(m => `<div class="mail">
-      <div class="top"><span>To ${U.esc(m.to)} · <span data-open="${m.bookingId}" style="cursor:pointer;text-decoration:underline">${m.bookingId}</span><span class="pill st ${tone[m.status] || 'neutral'}">${emailStatus(m)}</span></span><span>${U.fmtDateTime(m.at)}</span></div>
+      <div class="top"><span>To ${U.esc(m.to)} · ${m.bookingId ? `<span data-open="${m.bookingId}" style="cursor:pointer;text-decoration:underline">${m.bookingId}</span>` : m.leadId ? `<a href="#" data-lead="${U.esc(m.leadId)}" style="text-decoration:underline">${U.esc(m.leadId)}</a>` : ''}<span class="pill st ${tone[m.status] || 'neutral'}">${emailStatus(m)}</span></span><span>${U.fmtDateTime(m.at)}</span></div>
       <div class="subj">${U.esc(m.subject)}</div><p style="white-space:pre-line">${U.esc(m.body)}</p>
       ${m.error ? `<p style="color:var(--red)">${U.esc(m.error)}</p>` : ''}
       ${(m.attachments || []).map(a => { const b = S.bookings.find(x => x.id === m.bookingId); return b ? `<a href="${K.docUrl(a.type, b, a.paymentId)}" target="_blank">📎 ${a.type} (PDF)</a> ` : ''; }).join('')}
@@ -572,7 +574,7 @@
   /* ------------------------------------------------ extension API (used by admin-crm.js) */
   window.KA = {
     get S() { return S; }, get tab() { return tab; }, K, U, $, pill, toast, act, reload, render, go, openDrawer, closeDrawer, showLogin, quoteForLead,
-    addTab(name, fn) { EXT[name] = fn; }, afterRender(fn) { AFTER.push(fn); }, onBoot: []
+    addTab(name, fn) { EXT[name] = fn; }, afterRender(fn) { AFTER.push(fn); }, onBoot: [], onBookingDrawer: []
   };
 
   /* ------------------------------------------------ boot */

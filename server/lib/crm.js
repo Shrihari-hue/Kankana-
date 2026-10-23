@@ -32,7 +32,7 @@ const DEFAULT_CRM = {
 };
 
 const ACT_KINDS = ['created', 'enquiry', 'note', 'call', 'whatsapp', 'email', 'visit', 'stage', 'owner', 'task', 'booking', 'payment', 'edit'];
-const TASK_KINDS = ['call', 'visit', 'follow_up', 'other'];
+const TASK_KINDS = ['call', 'visit', 'follow_up', 'whatsapp', 'other'];
 
 const clean = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, n);
 const phoneKey = p => { const d = String(p || '').replace(/\D/g, ''); return d.length >= 8 ? d.slice(-10) : ''; };
@@ -100,6 +100,11 @@ function createCrm(store) {
   const cols = db.prepare('PRAGMA table_info(admins)').all().map(c => c.name);
   if (!cols.includes('role')) db.exec(`ALTER TABLE admins ADD COLUMN role TEXT NOT NULL DEFAULT 'owner'`);
   if (!cols.includes('active')) db.exec(`ALTER TABLE admins ADD COLUMN active INTEGER NOT NULL DEFAULT 1`);
+  // A follow-up can carry a ready-to-send WhatsApp message ({ message, phone, template }).
+  if (!db.prepare('PRAGMA table_info(tasks)').all().some(c => c.name === 'data')) db.exec('ALTER TABLE tasks ADD COLUMN data TEXT');
+  /** Listeners set by the messaging module: onNewLead(leadId, { via }) — leads that arrive by themselves (website, booking page). */
+  const events = {};
+  const emitNew = (id, via) => { if (events.onNewLead) setImmediate(() => { try { events.onNewLead(id, { via }); } catch (e) { console.error('[crm] onNewLead', e.message); } }); };
 
   /* ---------------- settings ---------------- */
   function lists() {
@@ -268,6 +273,7 @@ function createCrm(store) {
       }
       if (actor && roleOf(actor) === 'sales' && f.ownerId === undefined) f.ownerId = actor.id;
       const id = insertLead(f, actorId);
+      if (!actor) emitNew(id, f.source);
       act(id, 'created', `Lead created from ${f.source}${actor ? ' by ' + (actor.name || actor.email) : ''}${f.message ? ': “' + f.message.slice(0, 300) + '”' : ''}${channelNote ? ' · ' + channelNote : ''}`, actorId);
       if (f.ownerId) act(id, 'owner', `Assigned to ${nameOf(f.ownerId)}`, actorId);
       return { lead: getLead(id), merged: false };
@@ -325,7 +331,8 @@ function createCrm(store) {
 
   /* ---------------- tasks ---------------- */
   function taskRow(t) {
-    return { id: t.id, leadId: t.lead_id, title: t.title, kind: t.kind, dueAt: t.due_at, assigneeId: t.assignee_id, assignee: nameOf(t.assignee_id), doneAt: t.done_at, doneBy: nameOf(t.done_by), createdAt: t.created_at };
+    const d = t.data ? JSON.parse(t.data) : null;
+    return { id: t.id, leadId: t.lead_id, title: t.title, kind: t.kind, dueAt: t.due_at, assigneeId: t.assignee_id, assignee: nameOf(t.assignee_id), doneAt: t.done_at, doneBy: nameOf(t.done_by), createdAt: t.created_at, auto: !t.created_by, message: d && d.message || null, phone: d && d.phone || null, template: d && d.template || null };
   }
   function listTasks() {
     const since = Date.now() - 14 * 864e5;
@@ -343,7 +350,8 @@ function createCrm(store) {
     if (input.leadId) { lead = rowToLead(getRow(input.leadId)); if (!lead) throw new CrmError(404, 'Lead not found'); assertEdit(actor, lead); }
     if (roleOf(actor) === 'sales' && assignee !== actor.id && !lead) assignee = actor.id;
     return store.tx(() => {
-      const r = db.prepare('INSERT INTO tasks(lead_id,title,kind,due_at,assignee_id,created_by,created_at) VALUES(?,?,?,?,?,?,?)').run(lead ? lead.id : null, title, kind, due, assignee, actor.id, Date.now());
+      const data = kind === 'whatsapp' && input.message ? JSON.stringify({ message: clean(input.message, 4000), phone: lead ? lead.phone : clean(input.phone, 30), template: clean(input.template, 40) }) : null;
+      const r = db.prepare('INSERT INTO tasks(lead_id,title,kind,due_at,assignee_id,created_by,created_at,data) VALUES(?,?,?,?,?,?,?,?)').run(lead ? lead.id : null, title, kind, due, assignee, actor.id, Date.now(), data);
       if (lead) {
         act(lead.id, 'task', `${kind === 'visit' ? 'Site visit scheduled' : 'Follow-up set'}: ${title} · ${fmtWhen(due)}${assignee !== actor.id ? ' · for ' + nameOf(assignee) : ''}`, actor.id);
         if (kind === 'visit') advance(lead, 'visit_booked', actor.id);
@@ -362,9 +370,10 @@ function createCrm(store) {
         db.prepare('UPDATE tasks SET done_at=?, done_by=? WHERE id=?').run(done ? Date.now() : null, done ? actor.id : null, t.id);
         if (lead && done) {
           const outcome = clean(input.outcome, 2000);
-          act(lead.id, t.kind === 'visit' ? 'visit' : 'task', `${t.kind === 'visit' ? 'Site visit done' : 'Done'}: ${t.title}${outcome ? ' — ' + outcome : ''}`, actor.id);
+          const k = t.kind === 'visit' ? 'visit' : t.kind === 'whatsapp' && input.sent ? 'whatsapp' : 'task';
+          act(lead.id, k, `${t.kind === 'visit' ? 'Site visit done' : k === 'whatsapp' ? 'Sent' : 'Done'}: ${t.title}${outcome ? ' — ' + outcome : ''}`, actor.id);
           if (t.kind === 'visit') advance(lead, 'visited', actor.id);
-          if (t.kind === 'call') advance(lead, 'contacted', actor.id);
+          if (t.kind === 'call' || k === 'whatsapp') advance(lead, 'contacted', actor.id);
         }
       }
       if (input.dueAt !== undefined) {
@@ -380,6 +389,34 @@ function createCrm(store) {
       return taskRow(db.prepare('SELECT * FROM tasks WHERE id=?').get(t.id));
     });
   }
+  /** A follow-up created by an automation (no person set it). Skips if an open task with the same dedupe title already exists on the lead. */
+  function systemTask({ leadId = null, title, kind = 'follow_up', dueAt, assigneeId, message = null, phone = null, template = null }) {
+    let a = assigneeId ? store.adminById(+assigneeId) : null;
+    if (!a || !a.active) a = defaultAssignee();
+    if (!a) return null;
+    const data = message ? JSON.stringify({ message: clean(message, 4000), phone: clean(phone, 30), template }) : null;
+    const r = db.prepare('INSERT INTO tasks(lead_id,title,kind,due_at,assignee_id,created_by,created_at,data) VALUES(?,?,?,?,?,NULL,?,?)').run(leadId, clean(title, 200), TASK_KINDS.includes(kind) ? kind : 'follow_up', Math.round(dueAt), a.id, Date.now(), data);
+    if (leadId) act(leadId, 'task', `Automatic follow-up: ${clean(title, 200)} · ${fmtWhen(dueAt)} · for ${a.name || a.email}`, null);
+    return taskRow(db.prepare('SELECT * FROM tasks WHERE id=?').get(r.lastInsertRowid));
+  }
+  const firstActive = r => db.prepare('SELECT * FROM admins WHERE role=? AND active=1 ORDER BY created_at LIMIT 1').get(r);
+  function defaultAssignee() { const id = (store.getKV('crm:auto') || {}).defaultAssigneeId; const a = id ? store.adminById(+id) : null; return a && a.active ? a : firstActive('owner'); }
+  const accountsPerson = () => firstActive('accounts') || defaultAssignee();
+  /** Round-robin a new, unassigned lead across active Sales logins (if switched on). */
+  function autoAssign(leadId) {
+    const lead = rowToLead(getRow(leadId)); if (!lead || lead.ownerId) return lead ? lead.ownerId : null;
+    const sales = db.prepare("SELECT * FROM admins WHERE role='sales' AND active=1 ORDER BY created_at").all();
+    if (!sales.length) return null;
+    const i = (+(store.getKV('crm:rr') || 0)) % sales.length; store.setKV('crm:rr', i + 1);
+    lead.ownerId = sales[i].id; writeLead(lead.id, lead);
+    act(lead.id, 'owner', `Assigned to ${sales[i].name || sales[i].email} (automatic, in turn)`, null);
+    return sales[i].id;
+  }
+  function openTasksFor(leadId) { return db.prepare('SELECT * FROM tasks WHERE lead_id=? AND done_at IS NULL').all(leadId).map(taskRow); }
+  function lastActivityAt(leadId) { const r = db.prepare('SELECT MAX(at) AS at FROM lead_activities WHERE lead_id=?').get(leadId); return r && r.at || 0; }
+  function openLeads() { return db.prepare("SELECT * FROM leads WHERE stage NOT IN ('won','lost')").all().map(rowToLead); }
+  function visitTasksBetween(a, b) { return db.prepare("SELECT * FROM tasks WHERE kind='visit' AND done_at IS NULL AND due_at >= ? AND due_at < ?").all(a, b).map(taskRow); }
+
   function deleteTask(id, actor) {
     const t = db.prepare('SELECT * FROM tasks WHERE id=?').get(+id); if (!t) throw new CrmError(404, 'Task not found');
     if (t.created_by !== actor.id && roleOf(actor) !== 'owner') throw new CrmError(403, 'Only the person who set it, or an owner, can delete it.');
@@ -406,6 +443,7 @@ function createCrm(store) {
           eventDate: b.startDate, guests: b.guests, source: b.source === 'website' ? 'Booking page' : 'Other', stage: 'new', ownerId: actor && roleOf(actor) === 'sales' ? actor.id : null }, actorId);
         act(id, 'created', b.source === 'website' ? `Requested a quotation online for ${what}` : `Lead created from booking ${b.id}`, actorId);
         lead = rowToLead(getRow(id));
+        if (b.source === 'website' && !backfilling) emitNew(id, 'Booking page');
       }
       linkBooking(lead.id, b, actorId);
       act(lead.id, 'booking', `${b.status === 'enquiry' ? 'Enquiry' : 'Quotation'} ${b.quoteNo} · ${what} · ₹${(b.quote.total || 0).toLocaleString('en-IN')}`, actorId, { bookingId: b.id });
@@ -430,8 +468,10 @@ function createCrm(store) {
     } catch (e) { console.error('[crm] status hook failed:', e.message); }
   }
   /** One-time: put existing website bookings into the pipeline so the CRM doesn't start empty. */
+  let backfilling = false;
   function backfill() {
     if (store.getKV('crm:backfilled')) return;
+    backfilling = true;
     const all = store.allBookings().slice().reverse();
     all.forEach(b => {
       if (leadsForBooking(b.id).length) return;
@@ -441,6 +481,7 @@ function createCrm(store) {
       if (b.status === 'cancelled') { const lead = rowToLead(getRow(id)); if (lead && OPEN(lead.stage)) { lead.lostReason = 'Event cancelled'; moveStage(lead, 'lost', null, 'Event cancelled'); } }
     });
     store.setKV('crm:backfilled', true);
+    backfilling = false;
   }
   backfill();
 
@@ -449,7 +490,10 @@ function createCrm(store) {
     lists, setLists, team, addMember, updateMember,
     leadSummaries, getLead, createLead, updateLead, deleteLead, logActivity,
     listTasks, createTask, updateTask, deleteTask,
-    onBookingCreated, onPayment, onStatus, leadsForBooking, linkBooking: (leadId, b) => linkBooking(leadId, b)
+    onBookingCreated, onPayment, onStatus, leadsForBooking, linkBooking: (leadId, b) => linkBooking(leadId, b),
+    events, systemTask, autoAssign, defaultAssignee, accountsPerson, openTasksFor, lastActivityAt, openLeads, visitTasksBetween,
+    logContact: (leadId, kind, body, actorId) => { act(leadId, kind, body, actorId || null); const l = rowToLead(getRow(leadId)); if (l && ['call', 'whatsapp', 'email'].includes(kind)) advance(l, 'contacted', actorId || null); },
+    rawLead: id => rowToLead(getRow(id)), nameOf, fmtWhen
   };
 }
 

@@ -153,6 +153,8 @@ function open(dataDir) {
       token_hash TEXT PRIMARY KEY, admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE, expires INTEGER NOT NULL
     );
   `);
+  // Emails can belong to a CRM lead as well as (or instead of) a booking.
+  if (!db.prepare('PRAGMA table_info(emails)').all().some(c => c.name === 'lead_id')) db.exec('ALTER TABLE emails ADD COLUMN lead_id TEXT');
   return new Store(db);
 }
 
@@ -366,13 +368,13 @@ class Store {
 
   /* ---------- emails ---------- */
   logEmail(e) {
-    this.db.prepare('INSERT INTO emails(id,at,to_addr,booking_id,subject,body,attachments,status,error) VALUES(?,?,?,?,?,?,?,?,?)')
-      .run(e.id, Date.now(), e.to, e.bookingId || null, e.subject, e.body, JSON.stringify(e.attachments || []), e.status, e.error || null);
+    this.db.prepare('INSERT INTO emails(id,at,to_addr,booking_id,subject,body,attachments,status,error,lead_id) VALUES(?,?,?,?,?,?,?,?,?,?)')
+      .run(e.id, Date.now(), e.to, e.bookingId || null, e.subject, e.body, JSON.stringify(e.attachments || []), e.status, e.error || null, e.leadId || null);
   }
   setEmailStatus(id, status, error) { this.db.prepare('UPDATE emails SET status=?, error=? WHERE id=?').run(status, error || null, id); }
   recentEmails(n) {
     return this.db.prepare('SELECT * FROM emails ORDER BY at DESC LIMIT ?').all(n || 200).map(e => ({
-      id: e.id, at: e.at, to: e.to_addr, bookingId: e.booking_id, subject: e.subject, body: e.body,
+      id: e.id, at: e.at, to: e.to_addr, bookingId: e.booking_id, leadId: e.lead_id || null, subject: e.subject, body: e.body,
       attachments: JSON.parse(e.attachments || '[]'), status: e.status, error: e.error
     }));
   }

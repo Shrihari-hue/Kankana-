@@ -22,6 +22,7 @@ const { createService, HttpError } = require('./lib/service');
 const { createCrm } = require('./lib/crm');
 const { createMessaging } = require('./lib/messages');
 const { createReports } = require('./lib/reports');
+const { createEvents } = require('./lib/events');
 
 const PORT = +(process.env.PORT || 3000);
 const PROD = process.env.NODE_ENV === 'production';
@@ -39,6 +40,8 @@ hooks.onPayment = (b, pay, actor) => crm.onPayment(b, pay, adminByActor(actor));
 hooks.onStatus = (b, status, actor) => crm.onStatus(b, status, adminByActor(actor));
 const msg = createMessaging({ store, crm, svc, mailer });
 const reports = createReports({ store, crm });
+const events = createEvents({ store, crm, svc, msg });
+hooks.onPayment = (b, pay, actor) => { crm.onPayment(b, pay, adminByActor(actor)); events.onPayment(b); };
 // Automations: shortly after start, then every 5 minutes.
 setTimeout(() => msg.run(), 20000).unref();
 setInterval(() => msg.run(), 5 * 60000).unref();
@@ -443,6 +446,33 @@ route('POST', '/api/admin/messages/send', async (req, url, ctx) => msg.send(awai
 route('PUT', '/api/admin/templates', async (req) => ({ templates: msg.setTemplates((await readJson(req)).templates) }), { admin: true, roles: ['owner'] });
 route('PUT', '/api/admin/automations', async (req) => ({ auto: msg.setAuto(await readJson(req)) }), { admin: true, roles: ['owner'] });
 route('POST', '/api/admin/automations/run', () => msg.run(), { admin: true, roles: ['owner'] });
+
+/* ---------------- events: planner, vendors, feedback ---------------- */
+route('GET', '/api/admin/events', () => ({ events: events.list(), vendors: events.vendors(), sections: events.SECTIONS, vendorCategories: events.VENDOR_CATS }), { admin: true });
+route('GET', '/api/admin/events/:id', (req, url, ctx, p) => Object.assign(events.getPlan(p.id), { canPlan: events.canPlan(ctx.admin) }), { admin: true });
+route('POST', '/api/admin/events/:id/plan', (req, url, ctx, p) => { if (!events.canPlan(ctx.admin)) throw new HttpError(403, 'Only Owner and Events logins can start a plan.'); return events.createPlan(p.id, ctx.admin); }, { admin: true });
+route('PUT', '/api/admin/events/:id', async (req, url, ctx, p) => events.setMeta(p.id, await readJson(req), ctx.admin), { admin: true });
+route('POST', '/api/admin/events/:id/feedback-link', (req, url, ctx, p) => ({ feedback: events.feedbackFor(p.id) }), { admin: true });
+route('POST', '/api/admin/plan-items', async (req, url, ctx) => ({ item: events.addItem(await readJson(req), ctx.admin) }), { admin: true });
+route('PUT', '/api/admin/plan-items/:id', async (req, url, ctx, p) => ({ item: events.updateItem(p.id, await readJson(req), ctx.admin) }), { admin: true });
+route('DELETE', '/api/admin/plan-items/:id', (req, url, ctx, p) => ({ ok: events.deleteItem(p.id, ctx.admin) }), { admin: true });
+route('POST', '/api/admin/runsheet', async (req, url, ctx) => ({ line: events.saveRun(await readJson(req), ctx.admin) }), { admin: true });
+route('PUT', '/api/admin/runsheet/:id', async (req, url, ctx, p) => ({ line: events.saveRun(await readJson(req), ctx.admin, p.id) }), { admin: true });
+route('DELETE', '/api/admin/runsheet/:id', (req, url, ctx, p) => ({ ok: events.deleteRun(p.id, ctx.admin) }), { admin: true });
+route('POST', '/api/admin/rooming', async (req, url, ctx) => ({ room: events.saveRoom(await readJson(req), ctx.admin) }), { admin: true });
+route('PUT', '/api/admin/rooming/:id', async (req, url, ctx, p) => ({ room: events.saveRoom(await readJson(req), ctx.admin, p.id) }), { admin: true });
+route('DELETE', '/api/admin/rooming/:id', (req, url, ctx, p) => ({ ok: events.deleteRoom(p.id, ctx.admin) }), { admin: true });
+route('POST', '/api/admin/vendors', async (req, url, ctx) => ({ vendor: events.saveVendor(await readJson(req), ctx.admin) }), { admin: true });
+route('PUT', '/api/admin/vendors/:id', async (req, url, ctx, p) => ({ vendor: events.saveVendor(await readJson(req), ctx.admin, p.id) }), { admin: true });
+route('GET', '/api/admin/feedback', () => ({ feedback: events.allFeedback() }), { admin: true });
+route('GET', '/api/admin/event-template', () => ({ template: events.template(), sections: events.SECTIONS }), { admin: true });
+route('PUT', '/api/admin/event-template', async (req) => ({ template: events.setTemplate(await readJson(req)) }), { admin: true, roles: ['owner'] });
+// public feedback page
+route('GET', '/api/feedback/:token', (req, url, ctx, p) => events.publicFeedback(p.token));
+route('POST', '/api/feedback/:token', async (req, url, ctx, p) => {
+  if (limited('fb:' + ctx.ip, 10, 3600000)) throw new HttpError(429, 'Too many attempts. Please try again later.');
+  return events.submitFeedback(p.token, await readJson(req));
+});
 
 /* ---------------- reports ---------------- */
 route('GET', '/api/admin/reports', (req, url, ctx) => reports.build({

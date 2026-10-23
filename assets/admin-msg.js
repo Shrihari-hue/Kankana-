@@ -77,6 +77,8 @@
     ['holdExpiryEmail', 'Warn when held dates are about to be released', 'Emails the client when their hold ends within 24 hours.', 'email'],
     ['balanceEmail', 'Balance reminders for confirmed celebrations', 'Emails the client <input type="text" id="au_bal" style="width:80px"> days before the balance due date (comma-separated). On the due date, Accounts gets a follow-up to collect it.', 'email'],
     ['visitReminder', 'Remind clients the day before a site visit', 'Emails the client and puts a WhatsApp reminder on the host’s list.'],
+    ['feedbackRequest', 'Ask for feedback after each event', 'The day after a celebration or stay ends, emails the family a feedback and referral link, and puts a WhatsApp version on the coordinator’s list.'],
+    ['anniversary', 'Wish couples on their first anniversary', 'One year after a wedding at Kankana, emails the couple and reminds the coordinator to send a WhatsApp.'],
     ['_stale', 'Flag leads that have gone quiet', 'Open leads with no activity for <input type="number" id="au_stale" min="0" max="60"> days and nothing scheduled get a check-in follow-up (0 = off).']
   ];
   function autoCard() {
@@ -102,7 +104,7 @@
       const body = {
         firstReplyEmail: c('firstReplyEmail'), firstReplyTask: c('firstReplyTask'), firstReplyMinutes: +$('au_frm').value || 60, autoAssign: c('autoAssign'),
         quoteFollowupEmail: true, quoteFollowupDays: c('_quote') ? (qfd || 3) : 0, holdExpiryEmail: c('holdExpiryEmail'), balanceEmail: c('balanceEmail'),
-        balanceReminderDays: $('au_bal').value.split(/[,\s]+/).map(Number).filter(n => n > 0), visitReminder: c('visitReminder'),
+        balanceReminderDays: $('au_bal').value.split(/[,\s]+/).map(Number).filter(n => n > 0), visitReminder: c('visitReminder'), feedbackRequest: c('feedbackRequest'), anniversary: c('anniversary'),
         staleDays: c('_stale') ? (stale || 7) : 0, defaultAssigneeId: $('au_def').value ? +$('au_def').value : null
       };
       call(() => K.api('PUT', '/api/admin/automations', body), 'Automations saved').then(async () => { await KA.reload(); autoCard(); }).catch(() => {});
@@ -111,7 +113,7 @@
   }
 
   /* ------------------------------------------------ settings: templates */
-  const REQUIRED = ['first_reply', 'no_response', 'visit_confirm', 'visit_reminder', 'quote_followup', 'hold_expiring', 'balance_reminder', 'thanks', 'keep_in_touch'];
+  const REQUIRED = ['first_reply', 'no_response', 'visit_confirm', 'visit_reminder', 'quote_followup', 'hold_expiring', 'balance_reminder', 'thanks', 'keep_in_touch', 'feedback_request', 'anniversary'];
   let draft = null, focusBody = null;
   function tplCard() {
     const el = $('tplCard'); if (!el) return;

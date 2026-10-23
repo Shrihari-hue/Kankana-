@@ -168,6 +168,51 @@
   .tgrp.late > h4{color:var(--red);}
   .tgrp .card{padding:6px 20px;}
   .owner-only[hidden]{display:none !important;}
+  /* events */
+  .ev-card{display:grid;grid-template-columns:64px minmax(0,1fr) 200px;gap:18px;align-items:center;background:var(--paper);border:1px solid var(--line-soft);padding:16px 20px;margin-bottom:10px;cursor:pointer;}
+  .ev-card:hover{border-color:var(--gold);}
+  .ev-date{text-align:center;border-right:1px solid var(--line-soft);padding-right:14px;}
+  .ev-date b{display:block;font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:400;line-height:1;}
+  .ev-date span{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);}
+  .ev-card h3{font-size:20px;line-height:1.2;}
+  .ev-card .meta{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .ev-prog .bar{height:6px;background:#efe4cf;border-radius:3px;overflow:hidden;margin:6px 0 5px;}
+  .ev-prog .bar i{display:block;height:100%;background:var(--green);border-radius:3px;}
+  .ev-prog .t{font-size:12px;color:var(--muted);}
+  .ev-prog .late{color:var(--red);font-weight:500;}
+  .ev-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-bottom:18px;}
+  .ev-head .back{font:inherit;font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:none;border:none;color:var(--gold-deep);cursor:pointer;padding:0;margin-bottom:8px;}
+  .ev-head h2{font-size:30px;line-height:1.1;}
+  .ev-tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin:8px 0 18px;overflow-x:auto;}
+  .ev-tabs button{font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:11px 16px;cursor:pointer;color:var(--muted);white-space:nowrap;}
+  .ev-tabs button.on{color:var(--ink);border-bottom-color:var(--gold);}
+  .ck-sec{margin-bottom:18px;} .ck-sec > h4{font-family:'Cinzel',serif;font-weight:400;font-size:11px;letter-spacing:.2em;color:var(--gold);margin-bottom:6px;}
+  .ck{display:grid;grid-template-columns:22px minmax(0,1fr) 130px 150px 160px 28px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px;}
+  .ck input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);}
+  .ck.done .tt{text-decoration:line-through;color:var(--muted);}
+  .ck .late{color:var(--red);}
+  .ck select,.ck input[type=date],.rs input,.rs select,.rm input{font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid var(--line-soft);background:#fffdf8;width:100%;min-width:0;}
+  .ck .x,.rs .x,.rm .x{border:1px solid var(--line);background:none;color:var(--red);width:26px;height:26px;cursor:pointer;}
+  .rs-day{margin-bottom:22px;} .rs-day > h4{font-size:15px;font-family:'Cormorant Garamond',serif;font-weight:500;margin-bottom:6px;}
+  .rs{display:grid;grid-template-columns:118px minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) 28px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-soft);}
+  .rs input[type=time]{font-variant-numeric:tabular-nums;}
+  .rm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) 120px minmax(0,1.2fr) 28px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-soft);}
+  .add-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:10px;}
+  .add-row .field{flex:1;min-width:120px;} .add-row .field input,.add-row .field select{padding:8px 10px;font-size:13.5px;}
+  .stars{color:var(--gold);letter-spacing:2px;font-size:15px;}
+  .fb{background:var(--paper);border:1px solid var(--line-soft);padding:16px 20px;margin-bottom:10px;font-size:14px;line-height:1.6;}
+  .fb .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .vt td input,.vt td select{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line-soft);background:#fffdf8;width:100%;min-width:80px;}
+  .tpl-row.nolab .field > span{display:none;} .tpl-row .btn{height:38px;}
+  #printArea{display:none;}
+  @media print{body.printing > *:not(#printArea){display:none !important;} body.printing #printArea{display:block;padding:20px;font-family:Georgia,serif;color:#000;} #printArea h1{font-size:22px;margin-bottom:4px;} #printArea table{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:12px;} #printArea td,#printArea th{border-bottom:1px solid #ccc;padding:6px;text-align:left;}}
+  @media(max-width:900px){.ev-card{grid-template-columns:56px minmax(0,1fr);}.ev-card .ev-prog{grid-column:1/-1;}
+    .ck{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 28px;row-gap:6px;} .ck > :nth-child(1){grid-area:1/1;} .ck .tt{grid-area:1/2/2/4;} .ck > :last-child{grid-area:1/4;}
+    .ck .c-due{grid-area:2/2;} .ck .c-own{grid-area:2/3;} .ck .c-ven{grid-area:3/2/4/4;}
+    .rs{grid-template-columns:110px minmax(0,1fr) 28px;} .rs .c-place,.rs .c-who{grid-column:2/3;}
+    #evView{display:flex;width:100%;} #evView button{flex:1;padding:9px 4px;letter-spacing:.08em;}
+    .ev-head > div:last-child{align-items:stretch !important;width:100%;} .ev-head .field{min-width:0 !important;}
+    .rm{grid-template-columns:minmax(0,1fr) 28px;} .rm .c-g,.rm .c-n,.rm .c-no{grid-column:1/2;}}
   /* reports */
   #t-reports{--s1:#a8742f;--s2:#8e3348;--grid:#e8dcc6;--track:#f1e7d4;}
   #rBody.busy{opacity:.55;transition:opacity .2s;}
@@ -265,6 +310,7 @@
       <button data-tab="overview" class="on">Overview</button>
       <button data-tab="leads">Leads <em id="lCount"></em></button>
       <button data-tab="tasks">Follow-ups <em id="tCount"></em></button>
+      <button data-tab="events">Events <em id="eCount"></em></button>
       <button data-tab="reports">Reports</button>
       <button data-tab="bookings">Bookings <em id="bCount"></em></button>
       <button data-tab="calendar">Calendar</button>
@@ -323,6 +369,13 @@
           <div style="display:flex;gap:10px;flex-wrap:wrap"><div class="seg" id="tWho"><button data-v="me" class="on">Mine</button><button data-v="all">Everyone</button></div><button class="btn sm solid" id="tNew">New follow-up</button></div></div>
         <div id="tAdd" class="card" style="display:none;margin-bottom:20px"></div>
         <div id="tGroups"></div>
+      </section>
+
+      <!-- EVENTS (CRM phase 4) -->
+      <section class="tab" id="t-events">
+        <div class="main-h"><div><div class="eyebrow">Planning &amp; after-care</div><h1 id="evTitle">Events</h1></div>
+          <div class="seg" id="evView"><button data-v="upcoming" class="on">Upcoming</button><button data-v="past">Recent</button><button data-v="vendors">Vendors</button><button data-v="feedback">Feedback</button></div></div>
+        <div id="evBody"><div class="empty">Loading…</div></div>
       </section>
 
       <!-- REPORTS (CRM) -->
@@ -515,6 +568,7 @@
           </div>
           <div class="card owner-only" id="autoCard" style="grid-column:1/-1"></div>
           <div class="card owner-only" id="tplCard" style="grid-column:1/-1"></div>
+          <div class="card owner-only" id="evTplCard" style="grid-column:1/-1"></div>
           <div class="card owner-only" id="listsCard">
             <h3>CRM lists</h3>
             <p class="muted" style="font-size:12px;margin-top:4px">One per line. These fill the dropdowns on every lead.</p>
@@ -552,5 +606,6 @@
 <script src="assets/admin-crm.js"></script>
 <script src="assets/admin-msg.js"></script>
 <script src="assets/admin-reports.js"></script>
+<script src="assets/admin-events.js"></script>
 </body>
 </html>

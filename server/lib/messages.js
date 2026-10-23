@@ -26,6 +26,10 @@ const DEFAULT_TEMPLATES = [
     body: 'Hello {first_name},\n\nA gentle reminder that the balance of {balance} for your booking {booking_id} ({venue}, {when}) is due by {due_date}.\n\nYou can pay securely here: {pay_link}\n\nThank you,\n{company}' },
   { id: 'thanks', name: 'Thank you after the event', subject: 'Thank you for celebrating with us',
     body: 'Hello {first_name},\n\nThank you for celebrating with us at {company}. It was an honour to be part of your family’s day.\n\nIf you have a moment, we would love to hear how everything felt — your words help other families find us.\n\nWith warm wishes,\n{my_name}, {company}' },
+  { id: 'feedback_request', name: 'Feedback request (after the event)', subject: 'How was your celebration at Kankana?',
+    body: 'Hello {first_name},\n\nThank you for celebrating with us. We hope every moment felt the way you imagined.\n\nWould you share how it went? It takes a minute: {feedback_link}\n\nIf friends or family are planning a celebration, you can introduce them on the same page — we will take good care of them.\n\nWith warm wishes,\n{my_name}, {company}' },
+  { id: 'anniversary', name: 'Anniversary wishes', subject: 'Happy anniversary from Kankana',
+    body: 'Hello {first_name},\n\nA year ago today we celebrated with you at {company}. Wishing you both a very happy anniversary!\n\nIf you would like to mark the day with a dinner or a stay at the estate, we would love to welcome you back.\n\nWarm wishes,\n{company}' },
   { id: 'keep_in_touch', name: 'Keep in touch (lost lead)', subject: 'Thank you for considering Kankana',
     body: 'Hello {first_name},\n\nThank you for considering {company}. If your plans change, or you are planning another celebration, we would be glad to help.\n\nWarm regards,\n{my_name}, {company}' }
 ];
@@ -34,7 +38,7 @@ const PLACEHOLDERS = [
   ['first_name', 'Client’s first name'], ['name', 'Client’s full name'], ['event', 'Event type, e.g. wedding'], ['event_date', 'Dates they mentioned'], ['guests', 'Guest count'],
   ['my_name', 'Your name'], ['company', 'Kankana — Weddings & Resorts'], ['company_phone', 'Company phone'], ['company_address', 'Company address'],
   ['booking_id', 'Booking ID'], ['quote_no', 'Quotation number'], ['venue', 'What’s booked'], ['when', 'Dates of the booking'], ['total', 'Quotation total'],
-  ['advance', 'Advance to confirm'], ['balance', 'Balance due'], ['due_date', 'Balance due date'], ['hold_until', 'Hold expiry'], ['pay_link', 'Client’s pay / track link'], ['visit_time', 'Next site visit time']
+  ['advance', 'Advance to confirm'], ['balance', 'Balance due'], ['due_date', 'Balance due date'], ['hold_until', 'Hold expiry'], ['pay_link', 'Client’s pay / track link'], ['visit_time', 'Next site visit time'], ['feedback_link', 'Client’s feedback page (after the event)']
 ];
 
 const DEFAULT_AUTO = {
@@ -49,6 +53,8 @@ const DEFAULT_AUTO = {
   balanceEmail: true,
   staleDays: 7,               // 0 = off
   visitReminder: true,
+  feedbackRequest: true,      // ask for feedback the day after an event ends
+  anniversary: true,          // wish wedding couples a happy anniversary a year later
   defaultAssigneeId: null
 };
 
@@ -60,12 +66,16 @@ const fmtDT = ms => new Date(ms).toLocaleString('en-IN', { timeZone: 'Asia/Kolka
 
 function createMessaging({ store, crm, svc, mailer }) {
   const db = store.db;
+  const extraContext = [];   // fns ({ lead, booking }) => { placeholder: value } — added by other modules (events)
+  const extraRules = [];     // fns (now, helpers) run with the automations
   db.exec(`CREATE TABLE IF NOT EXISTS auto_log (key TEXT PRIMARY KEY, at INTEGER NOT NULL, rule TEXT NOT NULL, ref TEXT, note TEXT)`);
 
   /* ---------------- templates ---------------- */
   function templates() {
     const t = store.getKV('crm:templates');
-    return Array.isArray(t) && t.length ? t : DEFAULT_TEMPLATES;
+    if (!(Array.isArray(t) && t.length)) return DEFAULT_TEMPLATES;
+    // Templates added in later versions appear even if the team saved their own list before.
+    return t.concat(DEFAULT_TEMPLATES.filter(d => !t.some(x => x.id === d.id)));
   }
   function setTemplates(list) {
     if (!Array.isArray(list)) throw Object.assign(new Error('Send a list of templates.'), { status: 400 });
@@ -101,7 +111,8 @@ function createMessaging({ store, crm, svc, mailer }) {
       booking_id: b ? b.id : '', quote_no: b ? b.quoteNo : '', venue: b ? (b.venueName || b.venueId) : '', when: d ? d.when : '',
       total: b ? P.inr(b.quote.total) : '', advance: b ? P.inr(b.quote.advance) : '', balance: b ? P.inr(Math.max(0, b.quote.total - paid)) : '',
       due_date: dueDate, hold_until: b && b.holdUntil ? fmtDT(b.holdUntil) : '', pay_link: b ? svc.trackUrl(b) : svc.siteUrl() + '/book.html',
-      visit_time: visit ? fmtDT(visit.dueAt) : 'your visit'
+      visit_time: visit ? fmtDT(visit.dueAt) : 'your visit',
+      ...extraContext.reduce((o, f) => { try { return Object.assign(o, f({ lead, booking }) || {}); } catch (e) { return o; } }, {})
     };
   }
   const fill = (text, ctx) => String(text || '').replace(/\{(\w+)\}/g, (m, k) => (k in ctx ? ctx[k] : m));
@@ -149,6 +160,7 @@ function createMessaging({ store, crm, svc, mailer }) {
       quoteFollowupEmail: bool(b.quoteFollowupEmail, cur.quoteFollowupEmail), holdExpiryEmail: bool(b.holdExpiryEmail, cur.holdExpiryEmail),
       balanceReminderDays: Array.isArray(b.balanceReminderDays) ? [...new Set(b.balanceReminderDays.map(x => n(x, 1, 120, 0)).filter(Boolean))].sort((a, c) => c - a).slice(0, 4) : cur.balanceReminderDays,
       balanceEmail: bool(b.balanceEmail, cur.balanceEmail), staleDays: n(b.staleDays, 0, 60, cur.staleDays), visitReminder: bool(b.visitReminder, cur.visitReminder),
+      feedbackRequest: bool(b.feedbackRequest, cur.feedbackRequest), anniversary: bool(b.anniversary, cur.anniversary),
       defaultAssigneeId: b.defaultAssigneeId !== undefined ? (b.defaultAssigneeId ? +b.defaultAssigneeId : null) : cur.defaultAssigneeId
     };
     if (next.defaultAssigneeId) { const a = store.adminById(next.defaultAssigneeId); if (!a || !a.active) next.defaultAssigneeId = null; }
@@ -254,6 +266,8 @@ function createMessaging({ store, crm, svc, mailer }) {
           mark(key, 'Visit reminder', lead.id, `${lead.name} · ${fmtDT(v.dueAt)}`); note('Visit reminder', lead.id);
         });
       }
+      const helpers = { settings: a, done, mark, note, autoEmail, waTask, emailOn, hasEmail };
+      extraRules.forEach(rule => { try { rule(now, helpers); } catch (e) { console.error('[automations] rule', e); } });
       store.setKV('crm:lastAutoRun', { at: now, actions: out.length });
     } catch (e) { console.error('[automations]', e); }
     finally { running = false; }
@@ -264,7 +278,8 @@ function createMessaging({ store, crm, svc, mailer }) {
 
   return {
     templates, setTemplates, render, latestBooking, send, PLACEHOLDERS,
-    autoSettings, setAuto, run, recentLog, lastRun: () => store.getKV('crm:lastAutoRun'), emailOn
+    autoSettings, setAuto, run, recentLog, lastRun: () => store.getKV('crm:lastAutoRun'), emailOn,
+    addContext: f => extraContext.push(f), addRule: f => extraRules.push(f)
   };
 }
 

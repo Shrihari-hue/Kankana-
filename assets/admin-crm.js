@@ -52,7 +52,7 @@
   const refresh = async () => { await KA.reload(); KA.render(); };
 
   /* ------------------------------------------------ roles: what each person sees */
-  const HIDE = { owner: [], sales: ['catalog', 'payments'], accounts: ['quote', 'catalog'], events: ['quote', 'catalog', 'payments'] };
+  const HIDE = { owner: [], sales: ['catalog', 'payments', 'reports'], accounts: ['quote', 'catalog'], events: ['quote', 'catalog', 'payments', 'reports'] };
   KA.onBoot.push(() => {
     const r = role();
     document.querySelectorAll('#tabs button').forEach(b => { b.hidden = (HIDE[r] || []).includes(b.dataset.tab); });

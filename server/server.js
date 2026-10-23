@@ -21,6 +21,7 @@ const mailer = require('./lib/mailer');
 const { createService, HttpError } = require('./lib/service');
 const { createCrm } = require('./lib/crm');
 const { createMessaging } = require('./lib/messages');
+const { createReports } = require('./lib/reports');
 
 const PORT = +(process.env.PORT || 3000);
 const PROD = process.env.NODE_ENV === 'production';
@@ -37,6 +38,7 @@ const adminByActor = a => (a && typeof a === 'object') ? a : (a ? store.adminByE
 hooks.onPayment = (b, pay, actor) => crm.onPayment(b, pay, adminByActor(actor));
 hooks.onStatus = (b, status, actor) => crm.onStatus(b, status, adminByActor(actor));
 const msg = createMessaging({ store, crm, svc, mailer });
+const reports = createReports({ store, crm });
 // Automations: shortly after start, then every 5 minutes.
 setTimeout(() => msg.run(), 20000).unref();
 setInterval(() => msg.run(), 5 * 60000).unref();
@@ -441,6 +443,14 @@ route('POST', '/api/admin/messages/send', async (req, url, ctx) => msg.send(awai
 route('PUT', '/api/admin/templates', async (req) => ({ templates: msg.setTemplates((await readJson(req)).templates) }), { admin: true, roles: ['owner'] });
 route('PUT', '/api/admin/automations', async (req) => ({ auto: msg.setAuto(await readJson(req)) }), { admin: true, roles: ['owner'] });
 route('POST', '/api/admin/automations/run', () => msg.run(), { admin: true, roles: ['owner'] });
+
+/* ---------------- reports ---------------- */
+route('GET', '/api/admin/reports', (req, url, ctx) => reports.build({
+  from: url.searchParams.get('from'), to: url.searchParams.get('to'), occ: url.searchParams.get('occ') === 'range' ? 'range' : 'next90',
+  withTeam: crm.roleOf(ctx.admin) === 'owner'
+}), { admin: true, roles: ['owner', 'accounts'] });
+route('GET', '/api/admin/leads.csv', () => ({ __raw: true, type: 'text/csv; charset=utf-8', body: '\ufeff' + reports.leadsCsv(),
+  headers: { 'Content-Disposition': `attachment; filename="kankana-leads-${P.todayIST()}.csv"` } }), { admin: true, roles: ['owner'] });
 
 /* ---------------- team logins ---------------- */
 const tempPassword = () => crypto.randomBytes(9).toString('base64url');

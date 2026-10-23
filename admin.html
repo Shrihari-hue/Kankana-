@@ -168,6 +168,43 @@
   .tgrp.late > h4{color:var(--red);}
   .tgrp .card{padding:6px 20px;}
   .owner-only[hidden]{display:none !important;}
+  /* reports */
+  #t-reports{--s1:#a8742f;--s2:#8e3348;--grid:#e8dcc6;--track:#f1e7d4;}
+  #rBody.busy{opacity:.55;transition:opacity .2s;}
+  .r-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin-bottom:20px;}
+  .r-kpis .kpi .v{font-family:'Jost',sans-serif;font-weight:400;font-size:28px;}
+  .r-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-bottom:20px;}
+  .r-card{background:var(--paper);border:1px solid var(--line-soft);padding:22px 24px;min-width:0;}
+  .r-card .hd{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
+  .r-card h3{font-size:22px;}
+  .r-card .sub{font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+  .r-card .tg{font:inherit;font-size:11px;letter-spacing:.08em;background:none;border:none;color:var(--gold-deep);cursor:pointer;text-decoration:underline;}
+  .hb{display:grid;grid-template-columns:minmax(90px,max-content) minmax(0,1fr) max-content;gap:9px 12px;align-items:center;font-size:13px;}
+  .hb .nm{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;}
+  .hb .tr{height:16px;position:relative;}
+  .hb .bar{position:absolute;left:0;top:0;bottom:0;background:var(--s1);border-radius:0 4px 4px 0;min-width:2px;}
+  .hb .bar.s2{background:var(--s2);}
+  .hb .bar.track{background:var(--track);border-radius:0 4px 4px 0;right:0;}
+  .hb .val{font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap;font-size:12.5px;}
+  .hb .val small{color:var(--muted);font-size:11.5px;margin-left:6px;}
+  .hb .grp{grid-column:1/-1;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:8px;}
+  .hb [data-tip]:hover,.cols [data-tip]:hover{filter:brightness(1.12);}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap;}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;}
+  .cols{width:100%;height:auto;display:block;overflow:visible;}
+  .cols text{font-family:'Jost',sans-serif;font-size:11px;fill:var(--muted);}
+  @media(max-width:760px){.cols text{font-size:11px;}}
+  .cols .gl{stroke:var(--grid);stroke-width:1;}
+  .cols .s1{fill:var(--s1);} .cols .s2{fill:var(--s2);}
+  #rTip{position:fixed;z-index:400;pointer-events:none;background:var(--ink);color:var(--cream);padding:8px 11px;font-size:12.5px;line-height:1.5;display:none;max-width:260px;box-shadow:0 6px 20px rgba(20,4,8,.25);}
+  #rTip b{font-weight:500;font-size:14px;display:block;}
+  .r-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+  .r-tbl th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:400;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
+  .r-tbl td{padding:9px 10px;border-bottom:1px solid var(--line-soft);}
+  .r-tbl .r{text-align:right;font-variant-numeric:tabular-nums;}
+  @media(max-width:1300px){.r-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}}
+  @media(max-width:1100px){.r-grid{grid-template-columns:minmax(0,1fr);}}
+  @media(max-width:760px){.r-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.r-card{padding:18px 16px;}.hb .nm{max-width:120px;}#rPeriod{flex-wrap:wrap;}}
   .msg-box textarea{width:100%;font:inherit;font-size:14px;line-height:1.6;padding:10px 12px;border:1px solid var(--line);background:var(--paper);min-height:150px;resize:vertical;}
   .msg-box .k-input{padding:9px 12px;font-size:14px;}
   .msg-note{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
@@ -228,6 +265,7 @@
       <button data-tab="overview" class="on">Overview</button>
       <button data-tab="leads">Leads <em id="lCount"></em></button>
       <button data-tab="tasks">Follow-ups <em id="tCount"></em></button>
+      <button data-tab="reports">Reports</button>
       <button data-tab="bookings">Bookings <em id="bCount"></em></button>
       <button data-tab="calendar">Calendar</button>
       <button data-tab="quote">Quotation Generator</button>
@@ -285,6 +323,18 @@
           <div style="display:flex;gap:10px;flex-wrap:wrap"><div class="seg" id="tWho"><button data-v="me" class="on">Mine</button><button data-v="all">Everyone</button></div><button class="btn sm solid" id="tNew">New follow-up</button></div></div>
         <div id="tAdd" class="card" style="display:none;margin-bottom:20px"></div>
         <div id="tGroups"></div>
+      </section>
+
+      <!-- REPORTS (CRM) -->
+      <section class="tab" id="t-reports">
+        <div class="main-h"><div><div class="eyebrow">How the business is doing</div><h1>Reports</h1></div>
+          <a class="btn sm owner-only" id="rCsv" href="/api/admin/leads.csv">Export leads (CSV)</a></div>
+        <div class="filters" id="rFilters">
+          <div class="seg" id="rPeriod"><button data-p="month">This month</button><button data-p="3m" class="on">Last 3 months</button><button data-p="12m">Last 12 months</button><button data-p="fy">This financial year</button><button data-p="custom">Custom</button></div>
+          <span id="rCustom" style="display:none;gap:8px;align-items:center"><input class="k-input" type="date" id="rFrom" style="min-width:0;width:auto"> <span class="muted">to</span> <input class="k-input" type="date" id="rTo" style="min-width:0;width:auto"></span>
+          <span class="muted" id="rRange" style="font-size:13px;align-self:center"></span>
+        </div>
+        <div id="rBody"><div class="empty">Loading reports…</div></div>
       </section>
 
       <!-- BOOKINGS -->
@@ -501,5 +551,6 @@
 <script src="assets/admin.js"></script>
 <script src="assets/admin-crm.js"></script>
 <script src="assets/admin-msg.js"></script>
+<script src="assets/admin-reports.js"></script>
 </body>
 </html>

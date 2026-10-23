@@ -64,7 +64,7 @@
   $('logout').onclick = async () => { try { await K.api('POST', '/api/admin/logout', {}); } catch (e) {} location.reload(); };
 
   /* ------------------------------------------------ navigation */
-  const TABS = ['overview', 'leads', 'tasks', 'bookings', 'calendar', 'quote', 'customers', 'payments', 'outbox', 'catalog', 'settings'];
+  const TABS = ['overview', 'leads', 'tasks', 'reports', 'bookings', 'calendar', 'quote', 'customers', 'payments', 'outbox', 'catalog', 'settings'];
   const EXT = {}, AFTER = [];   // tab renderers and after-render hooks added by admin-crm.js
   function go(t) {
     const nb = document.querySelector(`#tabs button[data-tab="${t}"]`);
@@ -589,5 +589,5 @@
   }
   $('login').style.display = 'none';
   setTimeout(boot, 0);   // let admin-crm.js register first
-  setInterval(() => { if (S && document.visibilityState === 'visible' && !$('drawer').classList.contains('open') && tab !== 'quote' && tab !== 'catalog' && tab !== 'settings') reload().then(render).catch(() => {}); }, 60000);
+  setInterval(() => { if (S && document.visibilityState === 'visible' && !$('drawer').classList.contains('open') && tab !== 'quote' && tab !== 'catalog' && tab !== 'settings' && tab !== 'reports') reload().then(render).catch(() => {}); }, 60000);
 })();

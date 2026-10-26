@@ -90,7 +90,7 @@
   KA.afterRender(t => { if (t === 'settings' && role() === 'owner') load(); });
   async function load() { try { data = await K.api('GET', '/api/admin/capture'); draw(); } catch (e) { if (e.status === 401) KA.showLogin(); } }
   const STATUS = {
-    created: ['green', 'New lead'], merged: ['blue', 'Added to existing lead'], hidden: ['amber', 'Number hidden'], skipped: ['neutral', 'Not a lead'], failed: ['red', 'Couldn’t import']
+    created: ['green', 'New lead'], merged: ['blue', 'Added to existing lead'], hidden: ['amber', 'Number hidden'], skipped: ['neutral', 'Not a lead'], test: ['green', 'Google Ads test received'], failed: ['red', 'Couldn’t import']
   };
   const FILTER = 'wedmegood.com OR weddingwire.in OR weddingz.in OR justdial.com OR venuelook.com OR shaadisaga.com OR weddingbazaar.com';
   function draw() {
@@ -129,6 +129,19 @@
         <div class="auto-log">${d.emails.map(m => `<div><span><span class="pill ${(STATUS[m.status] || STATUS.failed)[0]}" style="font-size:9px;padding:2px 7px;margin-right:6px">${(STATUS[m.status] || STATUS.failed)[1]}</span>${m.leadId ? `<a href="#" data-lead="${esc(m.leadId)}" style="color:var(--gold-deep)">${esc(m.leadId)}</a> · ` : ''}${esc(m.platform || 'Email')} · ${esc(m.subject || '(no subject)')}${m.note && m.status !== 'created' ? `<div class="muted" style="font-size:11.5px">${esc(m.note)}</div>` : ''}</span><span class="muted" style="white-space:nowrap">${esc(U.fmtDateTime(m.at))}</span></div>`).join('') || '<div class="muted">None yet.</div>'}</div>
       </div>
 
+      <div class="cap-sec"><h4>Google Ads lead forms</h4>
+        <p class="cap-p">If you run Google Ads with a lead form, Google can send each lead here within seconds. The lead is marked “Google” and is assigned and answered like a website enquiry. Set it up once in Google Ads:</p>
+        <details class="cap-steps"><summary>Connect Google Ads</summary><ol>
+          <li>In Google Ads, open <b style="font-weight:500">Assets → Lead forms</b> and edit your lead form (or create one).</li>
+          <li>Find the lead delivery / <b style="font-weight:500">Webhook integration</b> section. Paste the Webhook URL and the Key below.</li>
+          <li>Press <b style="font-weight:500">Send test data</b>. “Google Ads test received” should appear under Recent lead emails above within a few seconds. Test leads aren’t added to the CRM.</li>
+          <li>Save the form. Leads that came in before you connected won’t be sent, so download those from Google Ads once.</li></ol>
+          <div class="field" style="margin-top:10px"><span>Webhook URL</span></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><code class="cap-url" style="word-break:break-all">${esc(origin())}/api/hooks/lead/${esc(d.hookKey)}</code><button class="btn sm" id="cap_gu" type="button">Copy</button></div>
+          <div class="field" style="margin-top:10px"><span>Key</span></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><code class="cap-url" style="word-break:break-all">${esc(d.hookKey)}</code><button class="btn sm" id="cap_gk" type="button">Copy</button></div>
+        </details></div>
+
       <div class="cap-sec"><details class="cap-steps"><summary>Connect other apps (for later)</summary>
         <p class="cap-p" style="margin-top:10px">Pabbly Connect, Make or Zapier can forward Instagram and Facebook ad leads, Google Ads lead forms or an inbound-email service to this address. Send JSON with <span class="cap-url">name</span>, <span class="cap-url">phone</span>, <span class="cap-url">email</span>, <span class="cap-url">eventDate</span>, <span class="cap-url">guests</span> and <span class="cap-url">source</span>. You can also send an email’s <span class="cap-url">subject</span> and <span class="cap-url">text</span>. Keep this address private.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><code class="cap-url" style="word-break:break-all">${esc(origin())}/api/hooks/lead/${esc(d.hookKey)}</code><button class="btn sm" id="cap_hc" type="button">Copy</button><button class="btn sm ghost" id="cap_hr" type="button">Make a new address</button></div>
@@ -146,6 +159,8 @@
     const chk = $('cap_chk'); if (chk) chk.onclick = () => { chk.disabled = true; chk.textContent = 'Checking…'; call(() => K.api('POST', '/api/admin/lead-mail/check', {})).then(r => { Object.assign(data, { mailbox: r.mailbox, emails: r.emails }); toast(r.mailbox.lastError ? 'The mailbox needs attention' : 'Mailbox checked'); draw(); KA.reload().catch(() => {}); }).catch(() => { chk.disabled = false; chk.textContent = 'Check now'; }); };
     $('cap_paste').onclick = mailDrawer;
     el.querySelectorAll('[data-lead]').forEach(a => a.onclick = e => { e.preventDefault(); KA.openLead(a.dataset.lead); });
+    $('cap_gu').onclick = () => copy(`${origin()}/api/hooks/lead/${d.hookKey}`, 'Webhook URL');
+    $('cap_gk').onclick = () => copy(d.hookKey, 'Key');
     $('cap_hc').onclick = () => copy(`${origin()}/api/hooks/lead/${d.hookKey}`, 'Address');
     $('cap_hr').onclick = () => { if (!window.confirm('Make a new address? Any app using the old one will stop working until you update it.')) return; call(() => K.api('POST', '/api/admin/capture/hook-key', {}), 'New address made').then(load).catch(() => {}); };
   }

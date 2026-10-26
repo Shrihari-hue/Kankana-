@@ -183,8 +183,35 @@ function createCapture({ store, crm, mailer }) {
   }
   const keyOk = k => { const a = Buffer.from(String(k || '')), b = Buffer.from(hookKey()); return a.length === b.length && crypto.timingSafeEqual(a, b); };
   /** Accepts a ready lead ({name, phone, …}), a raw email ({raw}) or a parsed email ({subject, from, text|plain, html}, Cloudmailin-style headers too). */
+  /** Google Ads lead form webhook: { lead_id, user_column_data:[{column_id, column_name, string_value}], campaign_id, form_id, is_test }. */
+  const GSTD = ['FULL_NAME', 'FIRST_NAME', 'LAST_NAME', 'EMAIL', 'WORK_EMAIL', 'PHONE_NUMBER', 'WORK_PHONE', 'CITY'];
+  function googleLead(b) {
+    const col = {}, extra = [];
+    b.user_column_data.forEach(c => {
+      const id = String(c && c.column_id || '').toUpperCase(), v = clean(c && c.string_value, 500); if (!v) return;
+      if (GSTD.includes(id)) col[id] = v; else extra.push(`${clean(c.column_name || c.column_id, 80).replace(/[:?]+$/, '')}: ${v}`);
+    });
+    const leadKey = b.lead_id ? 'gads:' + clean(b.lead_id, 200) : '';
+    const base = { via: 'google-ads', from: 'Google Ads lead form', subject: `Lead form${b.form_id ? ' ' + clean(b.form_id, 40) : ''}${b.campaign_id ? ' · campaign ' + clean(b.campaign_id, 40) : ''}`, platform: 'Google Ads' };
+    if (b.is_test) { log(Object.assign(base, { status: 'test', note: 'Test lead from Google Ads — the connection works. Test leads aren’t added to the CRM.' })); return { status: 'test' }; }
+    if (leadKey && db.prepare('SELECT 1 FROM inbound_emails WHERE msg_id=?').get(leadKey)) return { status: 'duplicate' };
+    // Custom questions ("Wedding date", "Number of guests", "Budget"…) are read like a lead email.
+    const q = extra.length ? parse({ text: extra.join('\n') }).fields : {};
+    const fields = {
+      name: col.FULL_NAME || [col.FIRST_NAME, col.LAST_NAME].filter(Boolean).join(' '), phone: col.PHONE_NUMBER || col.WORK_PHONE || '', email: col.EMAIL || col.WORK_EMAIL || '',
+      city: col.CITY || q.city || '', eventType: q.eventType || '', eventDate: q.eventDate || '', guests: q.guests || null, budget: q.budget || null,
+      message: [extra.join('\n'), 'From a Google Ads lead form'].filter(Boolean).join('\n\n')
+    };
+    try {
+      if (!fields.name) fields.name = fields.email || fields.phone || 'Google Ads lead';
+      const { lead, merged } = crm.createLead(fields, { source: 'Google', campaign: 'Google Ads lead form', channelNote: 'sent by Google Ads', channel: 'Website' });
+      log(Object.assign(base, { msgId: leadKey, status: merged ? 'merged' : 'created', leadId: lead.id, note: lead.name }));
+      return { status: merged ? 'merged' : 'created' };
+    } catch (e) { log(Object.assign(base, { msgId: leadKey, status: 'failed', note: e.message })); return { status: 'failed', error: e.message }; }
+  }
   function webhook(body) {
     const b = body && typeof body === 'object' ? body : {};
+    if (Array.isArray(b.user_column_data)) return googleLead(b);
     if (b.raw) return importMail(LM.parseMime(String(b.raw)), 'webhook');
     const h = b.headers && typeof b.headers === 'object' ? b.headers : {};
     const subject = b.subject || h.subject || h.Subject, text = b.text || b.plain || b['body-plain'], html = b.html || b['body-html'];
